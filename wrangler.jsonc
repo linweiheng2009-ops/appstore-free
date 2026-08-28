@@ -16,5 +16,12 @@
       "database_name": "appstore-free",
       "database_id": "407161a3-7f21-4246-b208-f0df54779250"
     }
-  ]
+  ],
+  "routes": [
+    {
+      "pattern": "freeapp.laowe.club/*",
+      "zone_id": "610438506e5de561b5151f12b19fa991"
+    }
+  ],
+  "workers_dev": true
 }
