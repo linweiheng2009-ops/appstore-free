@@ -1,111 +1,122 @@
-# OPC 14 · Cloudflare + GitHub 配置指南
+# OPC 14 · Cloudflare + GitHub 配置指南（实操版）
 
-> 恒哥手动执行的步骤，按顺序来。
+> ✅ = 已跑通 · ⏳ = 等恒哥手动（OAuth scope 不够）
 
-## 1. Cloudflare D1 数据库
+## ✅ 已完成（wrangler OAuth 跑通）
 
-### 创建
 ```bash
-# 本地 Mac 装 wrangler（一次性）
-npm install -g wrangler@latest
+# 0. wrangler 装好 + 已登录
+wrangler --version
+# 4.127.0
+wrangler whoami
+# Linweiheng2009@gmail.com's Account | b88feee7c5750eb9f9ab5a5c1c02fe53
 
-# 登录 Cloudflare（弹浏览器授权）
-wrangler login
-
-# 进项目目录
-cd ~/.openclaw/workspace/projects/appstore-free
-
-# 创建 D1 数据库
+# 1. D1 数据库创建 ✅
 wrangler d1 create appstore-free
-# → 输出：
-#   database_name = "appstore-free"
-#   database_id   = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-```
+# → database_id: 407161a3-7f21-4246-b208-f0df54779250
 
-### 把 database_id 填进 wrangler.jsonc
-把 `TBD_AFTER_WRANGLER_D1_CREATE` 替换成上面输出的 UUID。
-
-### 部署 schema
-```bash
+# 2. schema.sql 部署 ✅
 wrangler d1 execute appstore-free --file=./schema.sql --remote
-# 应该输出 "Executed commands successfully"
+# → 1 table (prices) + 2 views (today_free, week_free)
+
+# 3. 第一次入库 ✅
+export D1_DATABASE_ID=407161a3-7f21-4246-b208-f0df54779250
+node scripts/01_crawl.mjs
+# → 396 rows (US 99 / CN 98 / JP 99 / SG 100)
+
+# 4. 检测脚本 ✅
+node scripts/02_detect.mjs
+# → today_free.json: 0 真限免（正常，第一天没昨日可对比）
+
+# 5. Worker 部署 ✅
+wrangler deploy
+# → appstore-free.linweiheng2009.workers.dev
+# → Version ID: 8df3eba1-7af8-4638-82c7-04d262f7c9f7
+
+# 6. Worker route 添加 ✅
+# 在 wrangler.jsonc 加 routes 配置：
+#   freeapp.laowe.club/* (zone: laowe.club)
+# → 重新 deploy 后路由生效（DNS 记录还要手动加）
 ```
 
-## 2. Cloudflare API Token
+---
 
-Cloudflare dashboard → My Profile → API Tokens → Create Token → Edit Cloudflare Workers template
+## ⏳ 恒哥手动 3 步（5 分钟内搞定）
 
-权限：
-- Account → Workers Scripts: Edit
-- Account → D1: Edit
+### 步骤 1 · 加 CNAME（30 秒）
 
-复制 token 备用（只显示一次）。
+Cloudflare dashboard → laowe.club → DNS → Records → Add record
 
-## 3. Cloudflare Account ID
+| 字段 | 值 |
+|---|---|
+| Type | **CNAME** |
+| Name | **freeapp** |
+| Target | **appstore-free.linweiheng2009.workers.dev** |
+| Proxy status | **Proxied**（橙色云朵） |
 
-Cloudflare dashboard → Workers & Pages → 右侧栏底部 → "Account ID"
+DNS 改完通常 30 秒内全球生效。验证：
 
-## 4. GitHub Secrets
+```bash
+dig @1.1.1.1 freeapp.laowe.club +short
+# 应该返回 Cloudflare Anycast IPs（类似 104.21.x.x / 172.67.x.x）
+```
 
-仓库 `linweiheng2009-ops/appstore-free` → Settings → Secrets and variables → Actions → New repository secret
+### 步骤 2 · 创建 Cloudflare API Token（1 分钟）
+
+Cloudflare dashboard → My Profile → API Tokens → Create Token → "Edit Cloudflare Workers" template
+
+权限检查清单：
+- ✅ Account → Workers Scripts: Edit
+- ✅ Account → D1: Edit
+
+→ Create → Copy token（**只显示一次**）
+
+### 步骤 3 · 配 GitHub Secrets（1 分钟）
+
+仓库 `https://github.com/linweiheng2009-ops/appstore-free` → Settings → Secrets and variables → Actions → New repository secret
 
 | Name | Value |
 |---|---|
 | `CLOUDFLARE_API_TOKEN` | 第 2 步的 token |
-| `CLOUDFLARE_ACCOUNT_ID` | 第 3 步的 Account ID |
-| `D1_DATABASE_ID` | 第 1 步的 database_id UUID |
+| `CLOUDFLARE_ACCOUNT_ID` | `b88feee7c5750eb9f9ab5a5c1c02fe53` |
+| `D1_DATABASE_ID` | `407161a3-7f21-4246-b208-f0df54779250` |
 
-## 5. Cloudflare Workers 部署
+---
 
-由于这是仓库 push 自动部署模式（跟 OPC 09 一样）：
+## ⏳ 然后（恒哥或等自动）
 
-### 选项 A：Cloudflare Dashboard 直接 Connect to Git
-1. Cloudflare dashboard → Workers & Pages → Create application → Pages → Connect to Git
-2. 选 `linweiheng2009-ops/appstore-free`
-3. Build settings:
-   - Build command: 留空（前端是纯静态）
-   - Build output directory: `public`
-4. Save and Deploy
-5. 第一次部署会跑 build（空 build 也行），拿到 `*.linweiheng2009.workers.dev` URL
+### 第一次 cron 触发
 
-### 选项 B：用 wrangler 部署 Workers（推荐）
-```bash
-wrangler deploy
-# 输出 deploy URL
-```
+GitHub repo → Actions → "Daily AppStore Crawl + Detect" → Run workflow
 
-## 6. 绑定自定义域 freeapp.laowe.club
+OR 等 UTC 00:00 / SGT 08:00 自动跑。
 
-Workers → appstore-free → Settings → Triggers → Custom Domains → Add Custom Domain
+### 第二天（2026-08-29 SGT 08:00）开始有真限免
 
-输入 `freeapp.laowe.club`，Cloudflare 会自动配 DNS（需要 laowe.club 在 Cloudflare 上）。
+- 今天只入库（baseline 396 行）
+- 明天跑完才有昨日 vs 今日对比
+- 网站访问 `https://freeapp.laowe.club/` 应该能看到首批真限免卡片
 
-## 7. 第一次 cron 跑
+---
 
-GitHub Actions → 选 `Daily AppStore Crawl + Detect` workflow → Run workflow
+## 🔍 验证清单
 
-或等 UTC 00:00 = SGT 08:00 自动跑。
+跑完后做这几条 sanity check：
 
-第一次跑只入库（无昨日可对比 → 没限免数据）。
-**第二次跑（明天 SGT 08:00）开始有真限免数据。**
+- [ ] `https://freeapp.laowe.club/` 显示前端（蓝主题，标题"AppStore 限免监测 BETA"）
+- [ ] stats 显示 "0 真限免"（今天，明天才有）
+- [ ] 切换国家 Tab（🇺🇸 🇨🇳 🇯🇵🇸🇬）能切换（每个 tab 显示 0）
+- [ ] GitHub Actions → 看到 workflow 跑成功（绿勾）
+- [ ] 24 小时后 stats 显示 > 0 真限免
 
-## 8. 验证
-
-部署完成后访问：
-
-- `https://freeapp.laowe.club/` ← 主域
-- `https://appstore-free.linweiheng2009.workers.dev/` ← CF 子域（同站）
-
-应该看到：
-- 第一次访问：今日限免列表空，stats 显示 "0 真限免"
-- 第二天开始：可能出现真限免（价格从 >0 变 0 的 app）
+---
 
 ## 故障排查
 
 | 现象 | 原因 | 修法 |
 |---|---|---|
-| Wrangler "Authentication error [code: 10000]" | API token 错 / 权限不够 | 重做第 2 步 |
-| D1 execute "no such table" | schema 没部署 | 重跑第 1 步最后那条命令 |
-| GitHub Actions 失败 "Database not found" | D1_DATABASE_ID secret 没配 | 补第 4 步 |
-| 前端 404 | 部署路径错 | wrangler.jsonc 里 `assets.directory` 应该是 `./public` |
-| 数据空 | 第一天没昨日可对比 | 等第二天 cron 跑 |
+| freeapp.laowe.club 不解析 | CNAME 没加 | 重做步骤 1 |
+| Worker 报 1003/1004 | DNS 解析到 CF 但没命中 Worker | 等 5 分钟首次 SSL 证书签发 |
+| GitHub Actions 失败 "Authentication error [code: 10000]" | API token 错 | 重做步骤 2 |
+| GitHub Actions 失败 "Database not found" | D1_DATABASE_ID secret 错 | 检查步骤 3 |
+| GitHub Actions 失败 "table prices doesn't exist" | schema 没部署 | 本地跑 `wrangler d1 execute appstore-free --file=./schema.sql --remote` |
