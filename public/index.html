@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AppStore 限免监测 · freeapp.laowe.club</title>
+<meta name="description" content="App Store iOS 限时免费应用监测 · 跨 4 国 · 真限免过滤（价格状态变化检测）" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🆓</text></svg>" />
+<style>
+  :root {
+    --bg: #fafafa;
+    --fg: #1a1a1a;
+    --card: #fff;
+    --border: #e5e5e5;
+    --accent: #ff3b30;
+    --muted: #888;
+    --shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a0a0a;
+      --fg: #f0f0f0;
+      --card: #1a1a1a;
+      --border: #2a2a2a;
+      --accent: #ff453a;
+      --muted: #999;
+      --shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--fg); line-height: 1.5; }
+  header { padding: 24px 20px 16px; border-bottom: 1px solid var(--border); }
+  h1 { font-size: 22px; font-weight: 700; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .5px; margin-left: 8px; vertical-align: middle; }
+  .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .tab { padding: 10px 16px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 14px; font-weight: 600; border-bottom: 2px solid transparent; transition: all .15s; }
+  .tab.active { color: var(--fg); border-bottom-color: var(--accent); }
+  .tab:hover:not(.active) { color: var(--fg); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s; cursor: pointer; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+  .card-head { display: flex; gap: 12px; margin-bottom: 12px; }
+  .icon { width: 60px; height: 60px; border-radius: 12px; flex-shrink: 0; }
+  .meta { flex: 1; min-width: 0; }
+  .name { font-size: 15px; font-weight: 600; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .artist { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge-free { background: var(--accent); color: #fff; }
+  .badge-was { background: var(--border); color: var(--fg); }
+  .badge-genre { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty h3 { font-size: 18px; margin-bottom: 8px; color: var(--fg); }
+  .empty p { font-size: 14px; }
+  footer { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); margin-top: 40px; }
+  footer a { color: var(--muted); text-decoration: underline; }
+  .stats { display: flex; gap: 24px; padding: 12px 0; margin-bottom: 16px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .stats strong { color: var(--fg); font-size: 18px; font-weight: 700; }
+  .loading { text-align: center; padding: 40px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🆓 AppStore 限免监测 <span class="tag">BETA</span></h1>
+  <div class="sub">每日跟踪 iOS 真限免 · 价格状态变化检测 · 跨 US / CN / JP / SG</div>
+</header>
+<main>
+  <div class="stats" id="stats"></div>
+  <div class="tabs" id="tabs"></div>
+  <div id="content"><div class="loading">加载中...</div></div>
+</main>
+<footer>
+  <div>数据源：iTunes Search API（官方）· 检测：<code>price_today=0 AND price_yesterday&gt;0</code></div>
+  <div style="margin-top: 8px;">不收录内购限免 / 促销码限免（API 看不到）· v1 不做 macOS</div>
+  <div style="margin-top: 8px;"><a href="https://freeapp.laowe.club/">freeapp.laowe.club</a> · <a href="https://github.com/linweiheng2009-ops/appstore-free">GitHub</a></div>
+</footer>
+<script>
+const REGIONS = [
+  { code: 'ALL', name: '全部', emoji: '🌍' },
+  { code: 'US', name: '美国', emoji: '🇺🇸' },
+  { code: 'CN', name: '中国', emoji: '🇨🇳' },
+  { code: 'JP', name: '日本', emoji: '🇯🇵' },
+  { code: 'SG', name: '新加坡', emoji: '🇸🇬' },
+];
+
+let currentRegion = 'ALL';
+let data = { apps: [], by_region: {}, date: '', total: 0 };
+
+async function load() {
+  try {
+    const res = await fetch('./data/today_free.json');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    data = await res.json();
+  } catch (err) {
+    document.getElementById('content').innerHTML =
+      `<div class="empty"><h3>暂无今日限免数据</h3><p>第一次跑只入库无昨日可对比，第二天起才能检测。</p><p style="margin-top: 8px; font-family: monospace; font-size: 12px;">${err.message}</p></div>`;
+    document.getElementById('stats').innerHTML = '';
+    return;
+  }
+  render();
+}
+
+function render() {
+  // tabs
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = REGIONS.map((r) => {
+    const count = r.code === 'ALL' ? data.total : (data.by_region[r.code] || 0);
+    return `<button class="tab ${r.code === currentRegion ? 'active' : ''}" data-region="${r.code}">${r.emoji} ${r.name} (${count})</button>`;
+  }).join('');
+  tabs.querySelectorAll('.tab').forEach((t) => {
+    t.addEventListener('click', () => { currentRegion = t.dataset.region; render(); });
+  });
+
+  // stats
+  const stats = document.getElementById('stats');
+  stats.innerHTML = `
+    <div><strong>${data.total}</strong> 真限免</div>
+    <div>日期 <strong>${data.date}</strong></div>
+    <div>检测时间 <strong>${(data.detected_at || '').slice(0, 16).replace('T', ' ')}</strong> UTC</div>
+  `;
+
+  // content
+  const apps = (data.apps || []).filter((a) => currentRegion === 'ALL' || a.region === currentRegion);
+  if (apps.length === 0) {
+    document.getElementById('content').innerHTML =
+      `<div class="empty"><h3>${currentRegion === 'ALL' ? '今日暂无真限免' : '该国家今日无真限免'}</h3><p>限免数量本来就不多，建议每天 8:00 SGT 来看一眼。</p></div>`;
+    return;
+  }
+
+  document.getElementById('content').innerHTML =
+    `<div class="grid">` +
+    apps
+      .sort((a, b) => a.region.localeCompare(b.region) || b.previous_price - a.previous_price)
+      .map((a) => appCard(a))
+      .join('') +
+    `</div>`;
+
+  document.querySelectorAll('.card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const url = card.dataset.url;
+      if (url) window.open(url, '_blank');
+    });
+  });
+}
+
+function appCard(a) {
+  const wasPrice = formatPrice(a.previous_price, a.currency);
+  return `
+    <div class="card" data-url="${a.track_view_url || '#'}">
+      <div class="card-head">
+        <img class="icon" src="${a.artwork_url_100 || ''}" alt="" loading="lazy" />
+        <div class="meta">
+          <div class="name">${escapeHtml(a.track_name || '(unknown)')}</div>
+          <div class="artist">${escapeHtml(a.artist_name || '')}</div>
+          <div class="badge-row">
+            <span class="badge badge-free">限免</span>
+            <span class="badge badge-was">原 ${wasPrice}</span>
+            <span class="badge badge-genre">${a.region}</span>
+            ${a.genre ? `<span class="badge badge-genre">${escapeHtml(a.genre)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function formatPrice(price, currency) {
+  const symbol = { USD: '$', CNY: '¥', JPY: '¥', SGD: 'S$' }[currency] || '';
+  if (currency === 'JPY') return `${symbol}${price}`;
+  return `${symbol}${price.toFixed(2)}`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+load();
+</script>
+</body>
+</html>

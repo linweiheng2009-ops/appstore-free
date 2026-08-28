@@ -1,0 +1,12 @@
+# Cloudflare Pages / Workers _headers
+# 静态资源缓存策略
+/data/*
+  Cache-Control: public, max-age=300, must-revalidate
+  Access-Control-Allow-Origin: *
+
+/icons/*
+  Cache-Control: public, max-age=86400
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

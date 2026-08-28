@@ -1,0 +1,16 @@
+# dependencies
+node_modules/
+
+# wrangler
+.wrangler/
+.dev.vars
+
+# data (GitHub Actions 跑完才 commit)
+/data/
+
+# OS
+.DS_Store
+
+# editor
+.vscode/
+.idea/

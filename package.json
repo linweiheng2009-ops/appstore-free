@@ -1,0 +1,16 @@
+{
+  "name": "appstore-free",
+  "version": "0.1.0",
+  "private": true,
+  "description": "App Store limited-time free iOS app monitoring site (multi-source + price history)",
+  "type": "module",
+  "scripts": {
+    "crawl": "node scripts/01_crawl.mjs",
+    "detect": "node scripts/02_detect.mjs",
+    "all": "node scripts/01_crawl.mjs && node scripts/02_detect.mjs",
+    "serve": "python3 -m http.server 8765"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

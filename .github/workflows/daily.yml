@@ -1,0 +1,58 @@
+name: Daily AppStore Crawl + Detect
+
+on:
+  # 每天 UTC 00:00 / SGT 08:00 跑一次
+  schedule:
+    - cron: '0 0 * * *'
+  # 允许手动触发（调试 / 补数据）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  crawl-and-detect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --no-save wrangler@latest
+
+      - name: Apply D1 schema (idempotent)
+        run: |
+          npx wrangler d1 execute appstore-free \
+            --file=./schema.sql --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Run crawler (4 regions × top paid 200)
+        run: node scripts/01_crawl.mjs
+        env:
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+
+      - name: Run detector (compare yesterday → today)
+        run: node scripts/02_detect.mjs
+        env:
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+
+      - name: Commit and push data + json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "No data changes to commit"
+          else
+            git commit -m "data: $(date -u +%Y-%m-%d) snapshot + today_free"
+            git push
+          fi
