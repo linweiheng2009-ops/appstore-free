@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 /**
- * 01_crawl.mjs · 抓 iTunes Search API top paid 200 (4 国) → upsert D1
+ * 01_crawl.mjs · 抓 iTunes RSS top paid 200 (4 国) → upsert D1
  *
- * 数据源：iTunes Search API（官方免费，无需 key）
- *   https://itunes.apple.com/search?term=&country=US&media=software&entity=software&limit=200&genre=
+ * 数据源：iTunes RSS JSON API（官方免费，无需 key）
+ *   https://itunes.apple.com/{country}/rss/toppaidapplications/limit={N}/json
  *
- * 4 国：US / CN / JP / SG
+ * 4 国：US / CN / JP / SG（DEC-002）
  * 每个 app 写一条 prices 记录：app_id + region + date（今天）
  *
- * 注：
- *   - iTunes Search API 限速 ~20 calls/min（实际更宽松，1 call/200 apps 足够）
- *   - 本地 Mac 跑用 process.cwd()，GitHub Actions 容器也用 process.cwd()
- *   - 不需要 Playwright（iTunes Search API 是 REST，无需 JS）
+ * 选 RSS API 而不是 /search 的原因：
+ *   - /search 没有 chart 参数，不能拿 top paid
+ *   - RSS JSON 是 Apple 官方支持的 charts 数据源
+ *   - 单次拿 200 条含 price/id/bundleId/icon/genre 全字段，零额外 API
  */
 
-import { writeFile, mkdir, readFile } from 'node:fs/promises';
+import { writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -24,57 +24,64 @@ const TODAY = new Date().toISOString().slice(0, 10); // YYYY-MM-DD UTC
 
 // 4 国配置（DEC-002）
 const REGIONS = [
-  { code: 'US', name: '美国', currency: 'USD' },
-  { code: 'CN', name: '中国', currency: 'CNY' },
-  { code: 'JP', name: '日本', currency: 'JPY' },
-  { code: 'SG', name: '新加坡', currency: 'SGD' },
+  { code: 'US', lower: 'us', name: '美国', currency: 'USD' },
+  { code: 'CN', lower: 'cn', name: '中国', currency: 'CNY' },
+  { code: 'JP', lower: 'jp', name: '日本', currency: 'JPY' },
+  { code: 'SG', lower: 'sg', name: '新加坡', currency: 'SGD' },
 ];
 
-// 抓每个国家的 top paid 200（按 popularity 排序）
 const LIMIT_PER_REGION = 200;
-const ITUNES_API = 'https://itunes.apple.com/search';
+const ITUNES_RSS = 'https://itunes.apple.com';
 
 /**
  * 抓一个国家的 top paid N
  */
 async function fetchRegion(region) {
-  const url = new URL(ITUNES_API);
-  url.searchParams.set('country', region.code);
-  url.searchParams.set('media', 'software');
-  url.searchParams.set('entity', 'software');
-  url.searchParams.set('limit', String(LIMIT_PER_REGION));
-  // 没有直接的 "top paid" 参数，靠 popularity 排序就是 top charts
-  // 加 chart=TOP_PAID 让 API 走榜单路径
-  url.searchParams.set('chart', 'TOP_PAID');
-
+  const url = `${ITUNES_RSS}/${region.lower}/rss/toppaidapplications/limit=${LIMIT_PER_REGION}/json`;
   console.log(`[crawl] ${region.code} fetching top paid ${LIMIT_PER_REGION}...`);
   const res = await fetch(url, {
     headers: { 'User-Agent': 'appstore-free/0.1 (+https://freeapp.laowe.club)' },
   });
   if (!res.ok) {
-    throw new Error(`iTunes API ${region.code} HTTP ${res.status}`);
+    throw new Error(`iTunes RSS ${region.code} HTTP ${res.status}`);
   }
   const json = await res.json();
-  console.log(`[crawl] ${region.code} got ${json.resultCount} apps`);
-  return json.results || [];
+  const entries = json.feed?.entry || [];
+  console.log(`[crawl] ${region.code} got ${entries.length} apps`);
+  return entries;
 }
 
 /**
- * 转成 prices 行
+ * RSS entry → prices row
  */
-function toRow(app, region, date) {
+function toRow(entry, region, date) {
+  const id = entry.id?.attributes?.['im:id'] || '';
+  const bundleId = entry.id?.attributes?.['im:bundleId'] || '';
+  const name = entry['im:name']?.label || '';
+  const artist = entry['im:artist']?.label || '';
+  const genre = entry.category?.attributes?.label || '';
+  const price = parseFloat(entry['im:price']?.attributes?.amount || '0');
+  const currency = entry['im:price']?.attributes?.currency || region.currency;
+  const icon100 =
+    entry['im:image']?.find((img) => img.attributes?.height === '100')?.label ||
+    entry['im:image']?.[2]?.label ||
+    '';
+  const viewUrl =
+    entry.link?.find((l) => l.attributes?.rel === 'alternate')?.attributes?.href ||
+    '';
+
   return {
-    app_id: String(app.trackId),
+    app_id: String(id),
     region: region.code,
     date,
-    price: app.price ?? 0,
-    currency: app.currency || region.currency,
-    track_name: app.trackName || '',
-    artist_name: app.artistName || '',
-    genre: app.primaryGenreName || '',
-    bundle_id: app.bundleId || '',
-    track_view_url: app.trackViewUrl || '',
-    artwork_url_100: app.artworkUrl100 || '',
+    price,
+    currency,
+    track_name: name,
+    artist_name: artist,
+    genre,
+    bundle_id: bundleId,
+    track_view_url: viewUrl,
+    artwork_url_100: icon100,
     is_active: 1,
     crawled_at: new Date().toISOString(),
   };
@@ -86,11 +93,11 @@ async function main() {
   const allRows = [];
   for (const region of REGIONS) {
     try {
-      const apps = await fetchRegion(region);
-      const rows = apps.map((a) => toRow(a, region, TODAY));
+      const entries = await fetchRegion(region);
+      const rows = entries.map((e) => toRow(e, region, TODAY));
       allRows.push(...rows);
-      // iTunes API 限速：每次间隔 3 秒
-      await new Promise((r) => setTimeout(r, 3000));
+      // 4 国之间间隔 1.5s（Apple RSS 限速宽松，但别太快）
+      await new Promise((r) => setTimeout(r, 1500));
     } catch (err) {
       console.error(`[crawl] ${region.code} FAILED:`, err.message);
       // 单国失败不阻塞整轮
@@ -102,6 +109,7 @@ async function main() {
   const snapshot = {
     date: TODAY,
     crawled_at: new Date().toISOString(),
+    source: 'iTunes RSS toppaidapplications',
     total: allRows.length,
     by_region: allRows.reduce((acc, r) => {
       acc[r.region] = (acc[r.region] || 0) + 1;
@@ -112,18 +120,17 @@ async function main() {
   await writeFile(snapshotPath, JSON.stringify(snapshot, null, 2));
   console.log(`[crawl] snapshot: ${snapshotPath} (${allRows.length} rows)`);
 
-  // D1 upsert（GitHub Actions 容器里用 wrangler 调；本地 Mac 没 wrangler 就跳过）
+  // D1 upsert
   await upsertToD1(allRows);
 }
 
 /**
- * D1 upsert：通过 wrangler d1 execute（需要 D1_ID 环境变量）
+ * D1 upsert：通过 wrangler d1 execute（需要 D1_DATABASE_ID 环境变量）
  * 本地 Mac 没 wrangler 就 log 一行并写 SQL 文件给后续 manual 导入
  */
 async function upsertToD1(rows) {
   if (!process.env.D1_DATABASE_ID) {
     console.log('[crawl] D1_DATABASE_ID not set, skipping wrangler upsert (local Mac dev)');
-    // 写 SQL 文件供手动导入
     const sqlPath = join(DATA_DIR, `${TODAY}.sql`);
     const sql = rowsToSql(rows);
     await writeFile(sqlPath, sql);
@@ -131,15 +138,14 @@ async function upsertToD1(rows) {
     return;
   }
 
-  // GitHub Actions 容器里跑 wrangler
   const { execSync } = await import('node:child_process');
   const sqlPath = join(DATA_DIR, `${TODAY}.sql`);
   await writeFile(sqlPath, rowsToSql(rows));
   console.log(`[crawl] upserting to D1 via wrangler...`);
-  execSync(
-    `npx wrangler d1 execute appstore-free --file=${sqlPath} --remote`,
-    { stdio: 'inherit', cwd: ROOT },
-  );
+  execSync(`npx wrangler d1 execute appstore-free --file=${sqlPath} --remote`, {
+    stdio: 'inherit',
+    cwd: ROOT,
+  });
 }
 
 function rowsToSql(rows) {
