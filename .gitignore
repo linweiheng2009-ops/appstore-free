@@ -5,12 +5,11 @@ node_modules/
 .wrangler/
 .dev.vars
 
-# data (GitHub Actions 跑完才 commit)
-/data/
-
 # OS
 .DS_Store
 
 # editor
 .vscode/
 .idea/
+
+# data/ IS committed (GitHub Actions writes snapshot + today_free.json then git add data/ && push)
