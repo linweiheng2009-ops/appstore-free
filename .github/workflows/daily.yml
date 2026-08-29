@@ -22,7 +22,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'  # wrangler 4.x 要求 Node ≥ 22
 
       - name: Install dependencies
         run: npm install --no-save wrangler@latest
@@ -49,10 +49,16 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
+          git add data/ public/data/
           if git diff --cached --quiet; then
             echo "No data changes to commit"
           else
-            git commit -m "data: $(date -u +%Y-%m-%d) snapshot + today_free"
+            git commit -m "data: $(date -u +%Y-%m-%d) snapshot + today_free + week_free"
             git push
           fi
+
+      - name: Deploy Worker (freeapp.laowe.club)
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

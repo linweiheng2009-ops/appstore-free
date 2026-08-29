@@ -16,41 +16,54 @@
     --muted: #888;
     --shadow: 0 1px 3px rgba(0,0,0,.06);
   }
+  /* Dark tokens apply when the system prefers dark AND the user hasn't
+     forced light; or when the user explicitly picked dark. */
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0a0a0a;
-      --fg: #f0f0f0;
-      --card: #1a1a1a;
-      --border: #2a2a2a;
-      --accent: #ff453a;
-      --muted: #999;
-      --shadow: 0 1px 3px rgba(0,0,0,.4);
+    :root:not([data-theme="light"]) {
+      --bg: #0a0a0a; --fg: #f0f0f0; --card: #1a1a1a; --border: #2a2a2a;
+      --accent: #ff453a; --muted: #999; --shadow: 0 1px 3px rgba(0,0,0,.4);
     }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0a0a; --fg: #f0f0f0; --card: #1a1a1a; --border: #2a2a2a;
+    --accent: #ff453a; --muted: #999; --shadow: 0 1px 3px rgba(0,0,0,.4);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--fg); line-height: 1.5; }
-  header { padding: 24px 20px 16px; border-bottom: 1px solid var(--border); }
+  header { padding: 24px 20px 16px; border-bottom: 1px solid var(--border); position: relative; }
   h1 { font-size: 22px; font-weight: 700; }
   .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .5px; margin-left: 8px; vertical-align: middle; }
   .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .theme-btn { position: absolute; top: 24px; right: 20px; border: 1px solid var(--border); background: var(--card); color: var(--fg); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1; transition: transform .15s; }
+  .theme-btn:hover { transform: scale(1.08); }
   main { max-width: 1200px; margin: 0 auto; padding: 20px; }
-  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
   .tab { padding: 10px 16px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 14px; font-weight: 600; border-bottom: 2px solid transparent; transition: all .15s; }
   .tab.active { color: var(--fg); border-bottom-color: var(--accent); }
   .tab:hover:not(.active) { color: var(--fg); }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  .chip { padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 12px; cursor: pointer; transition: all .15s; white-space: nowrap; }
+  .chip:hover { border-color: var(--accent); color: var(--fg); }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .chip-fav.active { background: #f5a623; border-color: #f5a623; }
+  .filter-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s; cursor: pointer; }
+  .card { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s; cursor: pointer; }
   .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
   .card-head { display: flex; gap: 12px; margin-bottom: 12px; }
   .icon { width: 60px; height: 60px; border-radius: 12px; flex-shrink: 0; }
-  .meta { flex: 1; min-width: 0; }
+  .meta { flex: 1; min-width: 0; padding-right: 26px; }
   .name { font-size: 15px; font-weight: 600; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .artist { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .badge-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
   .badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
   .badge-free { background: var(--accent); color: #fff; }
   .badge-was { background: var(--border); color: var(--fg); }
+  .badge-date { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
   .badge-genre { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .fav { position: absolute; top: 12px; right: 12px; border: none; background: none; font-size: 18px; cursor: pointer; color: var(--border); transition: color .15s, transform .15s; padding: 4px; line-height: 1; }
+  .fav:hover { transform: scale(1.2); }
+  .fav.on { color: #f5a623; }
   .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
   .empty h3 { font-size: 18px; margin-bottom: 8px; color: var(--fg); }
   .empty p { font-size: 14px; }
@@ -65,15 +78,18 @@
 <header>
   <h1>🆓 AppStore 限免监测 <span class="tag">BETA</span></h1>
   <div class="sub">每日跟踪 iOS 真限免 · 价格状态变化检测 · 跨 US / CN / JP / SG</div>
+  <button class="theme-btn" id="themeBtn" title="切换深/浅色" aria-label="切换深/浅色">🌙</button>
 </header>
 <main>
   <div class="stats" id="stats"></div>
-  <div class="tabs" id="tabs"></div>
+  <div class="tabs" id="timeTabs"></div>
+  <div class="tabs" id="regionTabs"></div>
+  <div class="filters" id="filters"></div>
   <div id="content"><div class="loading">加载中...</div></div>
 </main>
 <footer>
-  <div>数据源：iTunes Search API（官方）· 检测：<code>price_today=0 AND price_yesterday&gt;0</code></div>
-  <div style="margin-top: 8px;">不收录内购限免 / 促销码限免（API 看不到）· v1 不做 macOS</div>
+  <div>数据源：iTunes RSS（官方）· 检测：<code>price_today=0 AND price_yesterday&gt;0</code></div>
+  <div style="margin-top: 8px;">不收录内购限免 / 促销码限免（API 看不到）· ¥ 换算为静态汇率近似 · v1 不做 macOS</div>
   <div style="margin-top: 8px;"><a href="https://freeapp.laowe.club/">freeapp.laowe.club</a> · <a href="https://github.com/linweiheng2009-ops/appstore-free">GitHub</a></div>
 </footer>
 <script>
@@ -85,78 +101,266 @@ const REGIONS = [
   { code: 'SG', name: '新加坡', emoji: '🇸🇬' },
 ];
 
-let currentRegion = 'ALL';
-let data = { apps: [], by_region: {}, date: '', total: 0 };
+// 静态近似汇率（→ CNY）。无外部依赖；偏差可接受，后续可换汇率 API。
+const CNY_RATE = { CNY: 1, USD: 7.2, JPY: 0.048, SGD: 5.35 };
+
+// 原价区间（按 ≈¥ 分桶），筛的是"限免前"的价格——限免力度
+const PRICE_BUCKETS = [
+  { id: 'ALL', label: '全部价位', test: () => true },
+  { id: 'p1', label: '≈¥10 内', test: (c) => c <= 10 },
+  { id: 'p2', label: '≈¥10–30', test: (c) => c > 10 && c <= 30 },
+  { id: 'p3', label: '≈¥30–100', test: (c) => c > 30 && c <= 100 },
+  { id: 'p4', label: '≈¥100+', test: (c) => c > 100 },
+];
+
+const state = {
+  time: 'today',    // today | yesterday | week
+  region: 'ALL',
+  genre: 'ALL',
+  price: 'ALL',
+  favOnly: false,
+};
+
+let todayData = null;  // ./data/today_free.json
+let weekData = null;   // ./data/week_free.json
+let favs = loadFavs();
+
+function loadFavs() {
+  try { return new Set(JSON.parse(localStorage.getItem('afc:favs') || '[]')); }
+  catch { return new Set(); }
+}
+function saveFavs() {
+  localStorage.setItem('afc:favs', JSON.stringify([...favs]));
+}
+function favKey(a) { return `${a.app_id}:${a.region}`; }
 
 async function load() {
-  try {
-    const res = await fetch('./data/today_free.json');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    data = await res.json();
-  } catch (err) {
+  const results = await Promise.allSettled([
+    fetch('./data/today_free.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
+    fetch('./data/week_free.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
+  ]);
+  todayData = results[0].status === 'fulfilled' ? results[0].value : null;
+  weekData = results[1].status === 'fulfilled' ? results[1].value : null;
+
+  if (!todayData && !weekData) {
     document.getElementById('content').innerHTML =
-      `<div class="empty"><h3>暂无今日限免数据</h3><p>第一次跑只入库无昨日可对比，第二天起才能检测。</p><p style="margin-top: 8px; font-family: monospace; font-size: 12px;">${err.message}</p></div>`;
-    document.getElementById('stats').innerHTML = '';
+      `<div class="empty"><h3>暂无限免数据</h3><p>第一次跑只入库无昨日可对比，第二天起才能检测。</p><p style="margin-top: 8px; font-family: monospace; font-size: 12px;">${results[0].reason?.message || 'fetch failed'}</p></div>`;
     return;
   }
   render();
 }
 
-function render() {
-  // tabs
-  const tabs = document.getElementById('tabs');
-  tabs.innerHTML = REGIONS.map((r) => {
-    const count = r.code === 'ALL' ? data.total : (data.by_region[r.code] || 0);
-    return `<button class="tab ${r.code === currentRegion ? 'active' : ''}" data-region="${r.code}">${r.emoji} ${r.name} (${count})</button>`;
-  }).join('');
-  tabs.querySelectorAll('.tab').forEach((t) => {
-    t.addEventListener('click', () => { currentRegion = t.dataset.region; render(); });
-  });
-
-  // stats
-  const stats = document.getElementById('stats');
-  stats.innerHTML = `
-    <div><strong>${data.total}</strong> 真限免</div>
-    <div>日期 <strong>${data.date}</strong></div>
-    <div>检测时间 <strong>${(data.detected_at || '').slice(0, 16).replace('T', ' ')}</strong> UTC</div>
-  `;
-
-  // content
-  const apps = (data.apps || []).filter((a) => currentRegion === 'ALL' || a.region === currentRegion);
-  if (apps.length === 0) {
-    document.getElementById('content').innerHTML =
-      `<div class="empty"><h3>${currentRegion === 'ALL' ? '今日暂无真限免' : '该国家今日无真限免'}</h3><p>限免数量本来就不多，建议每天 8:00 SGT 来看一眼。</p></div>`;
-    return;
+// ── 数据集 ────────────────────────────────────────────────────────────────
+function baseApps() {
+  if (state.time === 'today') {
+    const date = todayData?.date || '';
+    return (todayData?.apps || []).map((a) => ({ ...a, free_date: a.free_date || date }));
   }
+  const apps = weekData?.apps || [];
+  if (state.time === 'yesterday') {
+    const ref = todayData?.date || weekData?.window?.end || '';
+    const y = dateMinus(ref, 1);
+    return apps.filter((a) => a.free_date === y);
+  }
+  // week：同一 app 多次翻转只保留最近一次
+  const seen = new Map();
+  for (const a of apps) {
+    const k = favKey(a);
+    if (!seen.has(k) || a.free_date > seen.get(k).free_date) seen.set(k, a);
+  }
+  return [...seen.values()];
+}
 
-  document.getElementById('content').innerHTML =
-    `<div class="grid">` +
-    apps
-      .sort((a, b) => a.region.localeCompare(b.region) || b.previous_price - a.previous_price)
-      .map((a) => appCard(a))
-      .join('') +
-    `</div>`;
+function filterApps(list) {
+  return list.filter((a) => {
+    if (state.region !== 'ALL' && a.region !== state.region) return false;
+    if (state.genre !== 'ALL' && a.genre !== state.genre) return false;
+    if (state.price !== 'ALL') {
+      const bucket = PRICE_BUCKETS.find((b) => b.id === state.price);
+      if (bucket && !bucket.test(toCNY(a.previous_price, a.currency))) return false;
+    }
+    if (state.favOnly && !favs.has(favKey(a))) return false;
+    return true;
+  });
+}
 
-  document.querySelectorAll('.card').forEach((card) => {
-    card.addEventListener('click', () => {
-      const url = card.dataset.url;
-      if (url) window.open(url, '_blank');
+// ── 渲染 ─────────────────────────────────────────────────────────────────
+function render() {
+  renderTimeTabs();
+  renderRegionTabs();
+  renderFilters();
+  renderStats();
+  renderContent();
+}
+
+function renderTimeTabs() {
+  const today = todayData?.apps?.length ?? 0;
+  const all = weekData?.apps || [];
+  const ref = todayData?.date || weekData?.window?.end || '';
+  const y = dateMinus(ref, 1);
+  const yesterdayCount = all.filter((a) => a.free_date === y).length;
+  const weekCount = new Set(all.map(favKey)).size;
+
+  const defs = [
+    { id: 'today', label: '今日', count: today },
+    { id: 'yesterday', label: '昨日', count: yesterdayCount },
+    { id: 'week', label: '近 7 日', count: weekCount },
+  ];
+  const el = document.getElementById('timeTabs');
+  el.innerHTML = defs.map((d) =>
+    `<button class="tab ${state.time === d.id ? 'active' : ''}" data-time="${d.id}">${d.label} (${d.count})</button>`
+  ).join('');
+  el.querySelectorAll('.tab').forEach((t) => {
+    t.addEventListener('click', () => {
+      state.time = t.dataset.time;
+      state.genre = 'ALL';
+      render();
     });
   });
 }
 
+function renderRegionTabs() {
+  const base = baseApps();
+  const el = document.getElementById('regionTabs');
+  el.innerHTML = REGIONS.map((r) => {
+    const count = r.code === 'ALL' ? base.length : base.filter((a) => a.region === r.code).length;
+    return `<button class="tab ${r.code === state.region ? 'active' : ''}" data-region="${r.code}">${r.emoji} ${r.name} (${count})</button>`;
+  }).join('');
+  el.querySelectorAll('.tab').forEach((t) => {
+    t.addEventListener('click', () => { state.region = t.dataset.region; render(); });
+  });
+}
+
+function renderFilters() {
+  // 类目从当前（时间+国家）数据集里提取，按出现次数排
+  const base = filterApps(baseApps().filter((a) =>
+    state.region === 'ALL' || a.region === state.region));
+  const genreCounts = new Map();
+  for (const a of base) {
+    const g = a.genre || '其他';
+    genreCounts.set(g, (genreCounts.get(g) || 0) + 1);
+  }
+  const genres = [...genreCounts.entries()].sort((x, y) => y[1] - x[1]).map(([g]) => g);
+
+  const el = document.getElementById('filters');
+  const genreChips = [
+    `<button class="chip ${state.genre === 'ALL' ? 'active' : ''}" data-genre="ALL">全部类目</button>`,
+    ...genres.map((g) =>
+      `<button class="chip ${state.genre === g ? 'active' : ''}" data-genre="${escapeHtml(g)}">${escapeHtml(g)}</button>`),
+  ].join('');
+  const priceChips = PRICE_BUCKETS.map((b) =>
+    `<button class="chip ${state.price === b.id ? 'active' : ''}" data-price="${b.id}">${b.label}</button>`
+  ).join('');
+  const favChip =
+    `<button class="chip chip-fav ${state.favOnly ? 'active' : ''}" data-favtoggle>★ 只看收藏 (${favs.size})</button>`;
+
+  el.innerHTML = genreChips + `<span class="filter-sep"></span>` + priceChips + `<span class="filter-sep"></span>` + favChip;
+
+  el.querySelectorAll('[data-genre]').forEach((c) => {
+    c.addEventListener('click', () => { state.genre = c.dataset.genre; render(); });
+  });
+  el.querySelectorAll('[data-price]').forEach((c) => {
+    c.addEventListener('click', () => { state.price = c.dataset.price; render(); });
+  });
+  el.querySelector('[data-favtoggle]').addEventListener('click', () => {
+    state.favOnly = !state.favOnly; render();
+  });
+}
+
+function renderStats() {
+  const el = document.getElementById('stats');
+  if (state.time === 'today') {
+    el.innerHTML = `
+      <div><strong>${todayData?.total ?? 0}</strong> 真限免</div>
+      <div>日期 <strong>${todayData?.date || '—'}</strong></div>
+      <div>检测时间 <strong>${(todayData?.detected_at || '').slice(0, 16).replace('T', ' ')}</strong> UTC</div>
+    `;
+  } else if (state.time === 'yesterday') {
+    el.innerHTML = `
+      <div><strong>${dateMinus(todayData?.date || '', 1)}</strong> 的限免</div>
+      <div>来自近 7 日数据</div>
+    `;
+  } else {
+    el.innerHTML = `
+      <div><strong>${weekData?.total ?? 0}</strong> 次限免（近 7 日）</div>
+      <div>窗口 <strong>${weekData?.window?.start || '—'} ~ ${weekData?.window?.end || '—'}</strong></div>
+    `;
+  }
+}
+
+function renderContent() {
+  const apps = filterApps(baseApps());
+  if (apps.length === 0) {
+    document.getElementById('content').innerHTML = emptyState();
+    return;
+  }
+  const sorted = state.time === 'today'
+    ? [...apps].sort((a, b) => a.region.localeCompare(b.region) || b.previous_price - a.previous_price)
+    : [...apps].sort((a, b) => b.free_date.localeCompare(a.free_date) || a.region.localeCompare(b.region));
+
+  document.getElementById('content').innerHTML =
+    `<div class="grid">` + sorted.map(appCard).join('') + `</div>`;
+
+  document.querySelectorAll('.card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const url = card.dataset.url;
+      if (url && url !== '#') window.open(url, '_blank');
+    });
+  });
+  document.querySelectorAll('.fav').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const k = btn.dataset.key;
+      if (favs.has(k)) favs.delete(k); else favs.add(k);
+      saveFavs();
+      if (state.favOnly) render();
+      else {
+        btn.classList.toggle('on', favs.has(k));
+        btn.textContent = favs.has(k) ? '★' : '☆';
+        const chip = document.querySelector('[data-favtoggle]');
+        if (chip) chip.textContent = `★ 只看收藏 (${favs.size})`;
+      }
+    });
+  });
+}
+
+function emptyState() {
+  if (state.favOnly && favs.size === 0) {
+    return `<div class="empty"><h3>还没有收藏</h3><p>点卡片右上角的 ☆ 收藏限免 app</p></div>`;
+  }
+  if (state.favOnly) {
+    return `<div class="empty"><h3>当前筛选下没有收藏的 app</h3><p>试试切换国家 / 时间</p></div>`;
+  }
+  if (state.time === 'yesterday') {
+    return `<div class="empty"><h3>昨日无真限免</h3><p>也可能数据还没生成——每天 08:00 SGT 更新。</p></div>`;
+  }
+  if (state.time === 'week') {
+    return `<div class="empty"><h3>近 7 日暂无真限免</h3><p>限免数量本来就不多，每天 08:00 SGT 来看一眼。</p></div>`;
+  }
+  const scope = state.region === 'ALL' ? '今日暂无真限免' : '该国家今日无真限免';
+  return `<div class="empty"><h3>${scope}</h3><p>限免数量本来就不多，建议每天 08:00 SGT 来看一眼。</p></div>`;
+}
+
 function appCard(a) {
   const wasPrice = formatPrice(a.previous_price, a.currency);
+  const cny = toCNY(a.previous_price, a.currency);
+  const cnyNote = a.currency === 'CNY' ? '' : ` ≈¥${Math.round(cny)}`;
+  const key = favKey(a);
+  const isFav = favs.has(key);
+  const dateBadge = state.time === 'today' ? '' :
+    `<span class="badge badge-date">${(a.free_date || '').slice(5)} 免</span>`;
   return `
-    <div class="card" data-url="${a.track_view_url || '#'}">
+    <div class="card" data-url="${escapeHtml(a.track_view_url || '#')}">
+      <button class="fav ${isFav ? 'on' : ''}" data-key="${escapeHtml(key)}" title="收藏" aria-label="收藏">${isFav ? '★' : '☆'}</button>
       <div class="card-head">
-        <img class="icon" src="${a.artwork_url_100 || ''}" alt="" loading="lazy" />
+        <img class="icon" src="${escapeHtml(a.artwork_url_100 || '')}" alt="" loading="lazy" />
         <div class="meta">
           <div class="name">${escapeHtml(a.track_name || '(unknown)')}</div>
           <div class="artist">${escapeHtml(a.artist_name || '')}</div>
           <div class="badge-row">
             <span class="badge badge-free">限免</span>
-            <span class="badge badge-was">原 ${wasPrice}</span>
+            <span class="badge badge-was">原 ${wasPrice}${cnyNote}</span>
+            ${dateBadge}
             <span class="badge badge-genre">${a.region}</span>
             ${a.genre ? `<span class="badge badge-genre">${escapeHtml(a.genre)}</span>` : ''}
           </div>
@@ -166,15 +370,51 @@ function appCard(a) {
   `;
 }
 
+// ── 工具 ─────────────────────────────────────────────────────────────────
+function toCNY(price, currency) {
+  return (price || 0) * (CNY_RATE[currency] ?? 1);
+}
+
 function formatPrice(price, currency) {
   const symbol = { USD: '$', CNY: '¥', JPY: '¥', SGD: 'S$' }[currency] || '';
   if (currency === 'JPY') return `${symbol}${price}`;
-  return `${symbol}${price.toFixed(2)}`;
+  return `${symbol}${Number(price).toFixed(2)}`;
+}
+
+function dateMinus(yyyymmdd, days) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(yyyymmdd || '')) return '';
+  const d = new Date(yyyymmdd + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
 }
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+
+// ── 主题切换 ─────────────────────────────────────────────────────────────
+function effectiveDark() {
+  const t = document.documentElement.getAttribute('data-theme');
+  if (t === 'dark') return true;
+  if (t === 'light') return false;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function refreshThemeBtn() {
+  document.getElementById('themeBtn').textContent = effectiveDark() ? '☀️' : '🌙';
+}
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const next = effectiveDark() ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('afc:theme', next);
+  refreshThemeBtn();
+});
+(function initTheme() {
+  const saved = localStorage.getItem('afc:theme');
+  if (saved === 'dark' || saved === 'light') {
+    document.documentElement.setAttribute('data-theme', saved);
+  }
+  refreshThemeBtn();
+})();
 
 load();
 </script>

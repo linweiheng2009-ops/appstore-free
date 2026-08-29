@@ -14,20 +14,20 @@
 
 ## 数据源
 
-- 主：**iTunes Search API**（官方免费，无需 key，按 ID 查实时价格）
-- 辅：RSSHub `apple/appshopper`（验证用）
+- 主：**iTunes RSS JSON API**（`/rss/toppaidapplications/limit=N/json`，官方免费无需 key；单国上限 100 条）
+- 辅：RSSHub `apple/appshopper`（验证用，待接入）
 - 4 国：US / CN / JP / SG
 
 ## 技术栈
 
 | 层 | 选型 |
 |---|---|
-| 抓取 | Node.js |
+| 抓取 | Node.js（零依赖） |
 | 价格历史 | Cloudflare D1（SQLite） |
 | 检测 | Node.js（SQL 对比昨日 vs 今日） |
-| 前端 | 单文件 HTML + ECharts |
-| 部署 | Cloudflare Workers |
-| cron | GitHub Actions |
+| 前端 | 单文件 HTML（原生 JS，零依赖） |
+| 部署 | Cloudflare Workers（静态资产，`public/`） |
+| cron | GitHub Actions（UTC 00:00 抓取 + 检测 + 部署） |
 
 ## 开发
 
@@ -35,16 +35,15 @@
 # 拉取
 git clone https://github.com/linweiheng2009-ops/appstore-free.git
 cd appstore-free
-npm install
 
 # 抓取（本地）
 node scripts/01_crawl.mjs
 
-# 检测（本地）
+# 检测（本地，产出 data/ + public/data/）
 node scripts/02_detect.mjs
 
-# 本地起服务（看前端）
-python3 -m http.server 8765
+# 本地起服务（看前端，必须 serve public/）
+npm run serve
 # → http://localhost:8765
 ```
 
@@ -70,20 +69,25 @@ CREATE TABLE prices (
 
 CREATE INDEX idx_prices_region_date ON prices(region, date);
 
--- "今日限免"视图：价格从付费变免费
+-- "今日限免"视图：价格从付费变免费（含历史所有翻转，按 date 过滤）
 CREATE VIEW today_free AS
 SELECT t.* FROM prices t
 JOIN prices y ON t.app_id = y.app_id AND t.region = y.region
-WHERE t.date = date('now')
-  AND y.date = date('now', '-1 day')
-  AND t.price = 0
+  AND y.date = date(t.date, '-1 day')
+WHERE t.price = 0
   AND y.price > 0;
 ```
 
 ## 上线流程
 
-1. commit → push → Cloudflare Workers 自动部署
-2. `freeapp.laowe.club` 跟 CF 子域指向同一 Worker，缓存导致延迟不一致（commit 后子域立即生效，主域 ~10 分钟）
+1. **每日自动**：GitHub Actions（UTC 00:00 / SGT 08:00）→ 抓取 → 检测 → commit `data/` + `public/data/` → `wrangler deploy`（需要 repo secrets：CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / D1_DATABASE_ID）
+2. **手动**：本地 `wrangler deploy`（OAuth 登录）
+3. `freeapp.laowe.club` 跟 CF 子域指向同一 Worker；主域需先在 Cloudflare DNS 加 CNAME（见 `docs/SETUP.md`）
+
+## 前端数据契约
+
+`public/data/today_free.json`（今日）+ `public/data/week_free.json`（近 7 日，含 `free_date`；「昨日」Tab 从 7 日数据里筛）。
+检测脚本两份都写：`data/` 进 git 存档，`public/data/` 随 Worker 对外提供。
 
 ## OPC 文档
 
