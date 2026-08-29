@@ -1,97 +1,280 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AppStore 限免监测 · freeapp.laowe.club</title>
 <meta name="description" content="App Store iOS 限时免费应用监测 · 跨 4 国 · 真限免过滤（价格状态变化检测）" />
+<meta name="theme-color" content="#05070d" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🆓</text></svg>" />
 <style>
+  /* ── 设计令牌 ─────────────────────────────────────────── */
   :root {
-    --bg: #fafafa;
-    --fg: #1a1a1a;
-    --card: #fff;
-    --border: #e5e5e5;
-    --accent: #ff3b30;
-    --muted: #888;
-    --shadow: 0 1px 3px rgba(0,0,0,.06);
-  }
-  /* Dark tokens apply when the system prefers dark AND the user hasn't
-     forced light; or when the user explicitly picked dark. */
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #0a0a0a; --fg: #f0f0f0; --card: #1a1a1a; --border: #2a2a2a;
-      --accent: #ff453a; --muted: #999; --shadow: 0 1px 3px rgba(0,0,0,.4);
-    }
+    --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
   }
   :root[data-theme="dark"] {
-    --bg: #0a0a0a; --fg: #f0f0f0; --card: #1a1a1a; --border: #2a2a2a;
-    --accent: #ff453a; --muted: #999; --shadow: 0 1px 3px rgba(0,0,0,.4);
+    --bg: #05070d;
+    --panel: rgba(255,255,255,.03);
+    --card: rgba(255,255,255,.045);
+    --line: rgba(255,255,255,.09);
+    --line-strong: rgba(255,255,255,.16);
+    --ink: #e8edf5;
+    --muted: #8b94a7;
+    --accent: #22d3ee;
+    --accent-2: #818cf8;
+    --gold: #fbbf24;
+    --free-grad: linear-gradient(135deg, #22d3ee, #34d399);
+    --hero-grad: linear-gradient(92deg, #f0f6ff 10%, #22d3ee 55%, #818cf8 95%);
+    --glow: rgba(34, 211, 238, .14);
+    --grid-line: rgba(148, 163, 184, .05);
+    --orb-1: rgba(34, 211, 238, .14);
+    --orb-2: rgba(129, 140, 248, .12);
+    --shadow: 0 8px 32px rgba(0,0,0,.35);
   }
+  :root[data-theme="light"] {
+    --bg: #eef2f9;
+    --panel: rgba(255,255,255,.72);
+    --card: #ffffff;
+    --line: rgba(15,23,42,.1);
+    --line-strong: rgba(15,23,42,.18);
+    --ink: #0f172a;
+    --muted: #5b6472;
+    --accent: #0891b2;
+    --accent-2: #6366f1;
+    --gold: #d97706;
+    --free-grad: linear-gradient(135deg, #0891b2, #059669);
+    --hero-grad: linear-gradient(92deg, #0f172a 10%, #0891b2 55%, #6366f1 95%);
+    --glow: rgba(8, 145, 178, .16);
+    --grid-line: rgba(15, 23, 42, .045);
+    --orb-1: rgba(8, 145, 178, .1);
+    --orb-2: rgba(99, 102, 241, .09);
+    --shadow: 0 8px 24px rgba(15,23,42,.08);
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--fg); line-height: 1.5; }
-  header { padding: 24px 20px 16px; border-bottom: 1px solid var(--border); position: relative; }
-  h1 { font-size: 22px; font-weight: 700; }
-  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .5px; margin-left: 8px; vertical-align: middle; }
-  .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
-  .theme-btn { position: absolute; top: 24px; right: 20px; border: 1px solid var(--border); background: var(--card); color: var(--fg); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1; transition: transform .15s; }
-  .theme-btn:hover { transform: scale(1.08); }
-  main { max-width: 1200px; margin: 0 auto; padding: 20px; }
-  .tabs { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-  .tab { padding: 10px 16px; cursor: pointer; border: none; background: none; color: var(--muted); font-size: 14px; font-weight: 600; border-bottom: 2px solid transparent; transition: all .15s; }
-  .tab.active { color: var(--fg); border-bottom-color: var(--accent); }
-  .tab:hover:not(.active) { color: var(--fg); }
-  .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
-  .chip { padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 12px; cursor: pointer; transition: all .15s; white-space: nowrap; }
-  .chip:hover { border-color: var(--accent); color: var(--fg); }
-  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-  .chip-fav.active { background: #f5a623; border-color: #f5a623; }
-  .filter-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-  .card { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s; cursor: pointer; }
-  .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
-  .card-head { display: flex; gap: 12px; margin-bottom: 12px; }
-  .icon { width: 60px; height: 60px; border-radius: 12px; flex-shrink: 0; }
-  .meta { flex: 1; min-width: 0; padding-right: 26px; }
-  .name { font-size: 15px; font-weight: 600; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background-color: var(--bg);
+    /* 顶部双光晕 + 细网格，营造科技氛围 */
+    background-image:
+      radial-gradient(900px 480px at 18% -6%, var(--orb-1), transparent 62%),
+      radial-gradient(800px 460px at 85% 4%, var(--orb-2), transparent 60%),
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+    background-attachment: fixed;
+    color: var(--ink);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  ::selection { background: var(--accent); color: #04121a; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+  /* ── 头部 ────────────────────────────────────────────── */
+  header { padding: 52px 0 30px; }
+  .head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  h1 {
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 800;
+    letter-spacing: -.5px;
+    background: var(--hero-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1.15;
+  }
+  .tag {
+    display: inline-block; vertical-align: middle; margin-left: 10px;
+    font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 2.5px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 999px; padding: 3px 10px;
+    box-shadow: 0 0 12px var(--glow), inset 0 0 8px var(--glow);
+    background: transparent;
+    -webkit-text-fill-color: var(--accent);
+  }
+  .sub { color: var(--muted); font-size: 13.5px; margin-top: 10px; }
+  .status-line {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-top: 14px; font-family: var(--mono); font-size: 12px; color: var(--muted);
+  }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 8px #34d399; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
+  .sep { opacity: .4; }
+  #countdown { color: var(--accent); }
+  .theme-btn {
+    flex-shrink: 0;
+    border: 1px solid var(--line-strong); background: var(--panel); color: var(--ink);
+    width: 40px; height: 40px; border-radius: 12px; cursor: pointer; font-size: 17px; line-height: 1;
+    transition: border-color .2s, box-shadow .2s, transform .15s;
+    backdrop-filter: blur(8px);
+  }
+  .theme-btn:hover { border-color: var(--accent); box-shadow: 0 0 16px var(--glow); transform: translateY(-1px); }
+
+  /* ── 数据砖 ──────────────────────────────────────────── */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 26px 0 20px; }
+  .tile {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 18px 20px; backdrop-filter: blur(12px);
+    box-shadow: var(--shadow);
+    position: relative; overflow: hidden;
+  }
+  .tile::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: .5;
+  }
+  .tile__num {
+    font-family: var(--mono); font-size: 34px; font-weight: 700; line-height: 1.1;
+    background: var(--hero-grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .tile__num--sm { font-size: 17px; padding-top: 9px; letter-spacing: .5px; }
+  .tile__label { font-size: 12px; color: var(--muted); margin-top: 6px; letter-spacing: 1px; }
+
+  /* ── 控制面板（Tab + 筛选）───────────────────────────── */
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 14px 16px; backdrop-filter: blur(12px); box-shadow: var(--shadow);
+    margin-bottom: 22px;
+  }
+  .tabs { display: flex; gap: 2px; flex-wrap: wrap; }
+  .tabs + .tabs { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+  .tab {
+    padding: 7px 14px; cursor: pointer; border: 1px solid transparent; background: none;
+    color: var(--muted); font-family: inherit; font-size: 13.5px; font-weight: 600;
+    border-radius: 10px; transition: all .18s; letter-spacing: .3px;
+  }
+  .tab:hover:not(.active) { color: var(--ink); background: var(--card); }
+  .tab.active {
+    color: var(--accent); background: var(--card); border-color: var(--line-strong);
+    box-shadow: 0 0 14px var(--glow), inset 0 0 10px var(--glow);
+  }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .chip {
+    padding: 5px 13px; border-radius: 999px; border: 1px solid var(--line);
+    background: transparent; color: var(--muted); font-family: inherit; font-size: 12px;
+    cursor: pointer; transition: all .18s; white-space: nowrap;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--ink); box-shadow: 0 0 10px var(--glow); }
+  .chip.active {
+    background: var(--free-grad); border-color: transparent; color: #fff; font-weight: 700;
+    box-shadow: 0 2px 14px var(--glow);
+  }
+  .chip-fav.active { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #3a2503; }
+  .filter-sep { width: 1px; height: 18px; background: var(--line-strong); margin: 0 4px; }
+
+  /* ── 卡片网格 ────────────────────────────────────────── */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; padding-bottom: 10px; }
+  .card {
+    position: relative;
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 18px; backdrop-filter: blur(10px);
+    cursor: pointer;
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+    animation: rise .45s cubic-bezier(.2,.7,.3,1) both;
+    animation-delay: calc(var(--i, 0) * 28ms);
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    box-shadow: 0 12px 36px rgba(0,0,0,.25), 0 0 22px var(--glow);
+  }
+  .card-head { display: flex; gap: 14px; }
+  .icon {
+    width: 62px; height: 62px; border-radius: 15px; flex-shrink: 0;
+    box-shadow: 0 0 0 1px var(--line-strong), 0 4px 14px rgba(0,0,0,.25);
+  }
+  .meta { flex: 1; min-width: 0; padding-right: 24px; }
+  .name { font-size: 15px; font-weight: 700; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .artist { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .badge-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-  .badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-  .badge-free { background: var(--accent); color: #fff; }
-  .badge-was { background: var(--border); color: var(--fg); }
+  .badge-row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .badge {
+    padding: 2.5px 9px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    font-family: var(--mono); letter-spacing: .3px;
+  }
+  .badge-free { background: var(--free-grad); color: #fff; box-shadow: 0 0 12px var(--glow); }
+  .badge-was { background: var(--panel); border: 1px solid var(--line); color: var(--ink); }
   .badge-date { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
-  .badge-genre { background: transparent; border: 1px solid var(--border); color: var(--muted); }
-  .fav { position: absolute; top: 12px; right: 12px; border: none; background: none; font-size: 18px; cursor: pointer; color: var(--border); transition: color .15s, transform .15s; padding: 4px; line-height: 1; }
-  .fav:hover { transform: scale(1.2); }
-  .fav.on { color: #f5a623; }
-  .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
-  .empty h3 { font-size: 18px; margin-bottom: 8px; color: var(--fg); }
+  .badge-genre { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+  .fav {
+    position: absolute; top: 14px; right: 14px; border: none; background: none;
+    font-size: 19px; cursor: pointer; color: var(--line-strong);
+    transition: color .18s, transform .18s; padding: 4px; line-height: 1;
+  }
+  .fav:hover { transform: scale(1.25); color: var(--gold); }
+  .fav.on { color: var(--gold); text-shadow: 0 0 12px rgba(251, 191, 36, .5); }
+
+  /* ── 空态 / 加载 ─────────────────────────────────────── */
+  .empty {
+    text-align: center; padding: 72px 24px; color: var(--muted);
+    background: var(--panel); border: 1px dashed var(--line-strong); border-radius: 16px;
+    backdrop-filter: blur(8px);
+  }
+  .empty h3 { font-size: 18px; margin-bottom: 8px; color: var(--ink); font-weight: 700; }
   .empty p { font-size: 14px; }
-  footer { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); margin-top: 40px; }
-  footer a { color: var(--muted); text-decoration: underline; }
-  .stats { display: flex; gap: 24px; padding: 12px 0; margin-bottom: 16px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
-  .stats strong { color: var(--fg); font-size: 18px; font-weight: 700; }
-  .loading { text-align: center; padding: 40px; color: var(--muted); }
+  .loading { text-align: center; padding: 60px; color: var(--muted); font-family: var(--mono); letter-spacing: 2px; }
+
+  /* ── 页脚 ────────────────────────────────────────────── */
+  footer {
+    text-align: center; padding: 44px 20px 48px; color: var(--muted);
+    font-family: var(--mono); font-size: 12px; line-height: 2;
+    border-top: 1px solid var(--line); margin-top: 48px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+  footer code { color: var(--accent-2); }
+
+  button:focus-visible, .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (max-width: 680px) {
+    header { padding: 36px 0 22px; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .tile:first-child { grid-column: 1 / -1; }
+    .tile__num { font-size: 28px; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>🆓 AppStore 限免监测 <span class="tag">BETA</span></h1>
-  <div class="sub">每日跟踪 iOS 真限免 · 价格状态变化检测 · 跨 US / CN / JP / SG</div>
-  <button class="theme-btn" id="themeBtn" title="切换深/浅色" aria-label="切换深/浅色">🌙</button>
+<header class="wrap">
+  <div class="head-row">
+    <div>
+      <h1>🆓 AppStore 限免监测 <span class="tag">BETA</span></h1>
+      <div class="sub">每日跟踪 iOS 真限免 · 价格状态变化检测 · 跨 US / CN / JP / SG 四区</div>
+      <div class="status-line">
+        <span class="live-dot"></span>
+        <span>TRACKING ONLINE</span>
+        <span class="sep">·</span>
+        <span id="liveClock">SGT --:--:--</span>
+        <span class="sep">·</span>
+        <span>距下次更新 <span id="countdown">--:--:--</span></span>
+      </div>
+    </div>
+    <button class="theme-btn" id="themeBtn" title="切换深/浅色" aria-label="切换深/浅色">☀️</button>
+  </div>
 </header>
-<main>
+
+<main class="wrap">
   <div class="stats" id="stats"></div>
-  <div class="tabs" id="timeTabs"></div>
-  <div class="tabs" id="regionTabs"></div>
-  <div class="filters" id="filters"></div>
-  <div id="content"><div class="loading">加载中...</div></div>
+  <div class="panel">
+    <div class="tabs" id="timeTabs"></div>
+    <div class="tabs" id="regionTabs"></div>
+    <div class="filters" id="filters"></div>
+  </div>
+  <div id="content"><div class="loading">LOADING DATA...</div></div>
 </main>
+
 <footer>
-  <div>数据源：iTunes RSS（官方）· 检测：<code>price_today=0 AND price_yesterday&gt;0</code></div>
-  <div style="margin-top: 8px;">不收录内购限免 / 促销码限免（API 看不到）· ¥ 换算为静态汇率近似 · v1 不做 macOS</div>
-  <div style="margin-top: 8px;"><a href="https://freeapp.laowe.club/">freeapp.laowe.club</a> · <a href="https://github.com/linweiheng2009-ops/appstore-free">GitHub</a></div>
+  <div>DATA SOURCE: iTunes RSS (official) · DETECT: <code>price_today=0 AND price_yesterday&gt;0</code></div>
+  <div>不收录内购限免 / 促销码限免（API 看不到）· ¥ 换算为静态汇率近似 · v1 不做 macOS</div>
+  <div><a href="https://freeapp.laowe.club/">freeapp.laowe.club</a> · <a href="https://github.com/linweiheng2009-ops/appstore-free">GitHub</a></div>
 </footer>
+
 <script>
 const REGIONS = [
   { code: 'ALL', name: '全部', emoji: '🌍' },
@@ -144,7 +327,7 @@ async function load() {
 
   if (!todayData && !weekData) {
     document.getElementById('content').innerHTML =
-      `<div class="empty"><h3>暂无限免数据</h3><p>第一次跑只入库无昨日可对比，第二天起才能检测。</p><p style="margin-top: 8px; font-family: monospace; font-size: 12px;">${results[0].reason?.message || 'fetch failed'}</p></div>`;
+      `<div class="empty"><h3>暂无限免数据</h3><p>第一次跑只入库无昨日可对比，第二天起才能检测。</p><p style="margin-top: 8px; font-family: var(--mono); font-size: 12px;">${results[0].reason?.message || 'fetch failed'}</p></div>`;
     return;
   }
   render();
@@ -269,23 +452,26 @@ function renderFilters() {
 
 function renderStats() {
   const el = document.getElementById('stats');
+  let num, numLabel, dateText, dateLabel, thirdText, thirdLabel;
   if (state.time === 'today') {
-    el.innerHTML = `
-      <div><strong>${todayData?.total ?? 0}</strong> 真限免</div>
-      <div>日期 <strong>${todayData?.date || '—'}</strong></div>
-      <div>检测时间 <strong>${(todayData?.detected_at || '').slice(0, 16).replace('T', ' ')}</strong> UTC</div>
-    `;
+    num = todayData?.total ?? 0; numLabel = '今日真限免';
+    dateText = todayData?.date || '—'; dateLabel = '数据日期';
+    thirdText = (todayData?.detected_at || '').slice(11, 16) + ' UTC'; thirdLabel = '检测时间';
   } else if (state.time === 'yesterday') {
-    el.innerHTML = `
-      <div><strong>${dateMinus(todayData?.date || '', 1)}</strong> 的限免</div>
-      <div>来自近 7 日数据</div>
-    `;
+    const y = dateMinus(todayData?.date || '', 1);
+    num = filterApps(baseApps()).length; numLabel = '昨日真限免';
+    dateText = y || '—'; dateLabel = '数据日期';
+    thirdText = '7-DAY WINDOW'; thirdLabel = '来源窗口';
   } else {
-    el.innerHTML = `
-      <div><strong>${weekData?.total ?? 0}</strong> 次限免（近 7 日）</div>
-      <div>窗口 <strong>${weekData?.window?.start || '—'} ~ ${weekData?.window?.end || '—'}</strong></div>
-    `;
+    num = weekData?.total ?? 0; numLabel = '近 7 日限免次数';
+    dateText = `${weekData?.window?.start || ''} ~ ${weekData?.window?.end || ''}`; dateLabel = '回看窗口';
+    thirdText = String(new Set((weekData?.apps || []).map(favKey)).size); thirdLabel = '去重后应用数';
   }
+  el.innerHTML = `
+    <div class="tile"><div class="tile__num">${num}</div><div class="tile__label">${numLabel}</div></div>
+    <div class="tile"><div class="tile__num tile__num--sm">${dateText}</div><div class="tile__label">${dateLabel}</div></div>
+    <div class="tile"><div class="tile__num tile__num--sm">${thirdText}</div><div class="tile__label">${thirdLabel}</div></div>
+  `;
 }
 
 function renderContent() {
@@ -299,7 +485,7 @@ function renderContent() {
     : [...apps].sort((a, b) => b.free_date.localeCompare(a.free_date) || a.region.localeCompare(b.region));
 
   document.getElementById('content').innerHTML =
-    `<div class="grid">` + sorted.map(appCard).join('') + `</div>`;
+    `<div class="grid">` + sorted.map((a, i) => appCard(a, i)).join('') + `</div>`;
 
   document.querySelectorAll('.card').forEach((card) => {
     card.addEventListener('click', () => {
@@ -341,7 +527,7 @@ function emptyState() {
   return `<div class="empty"><h3>${scope}</h3><p>限免数量本来就不多，建议每天 08:00 SGT 来看一眼。</p></div>`;
 }
 
-function appCard(a) {
+function appCard(a, idx) {
   const wasPrice = formatPrice(a.previous_price, a.currency);
   const cny = toCNY(a.previous_price, a.currency);
   const cnyNote = a.currency === 'CNY' ? '' : ` ≈¥${Math.round(cny)}`;
@@ -350,7 +536,7 @@ function appCard(a) {
   const dateBadge = state.time === 'today' ? '' :
     `<span class="badge badge-date">${(a.free_date || '').slice(5)} 免</span>`;
   return `
-    <div class="card" data-url="${escapeHtml(a.track_view_url || '#')}">
+    <div class="card" style="--i:${Math.min(idx, 16)}" data-url="${escapeHtml(a.track_view_url || '#')}">
       <button class="fav ${isFav ? 'on' : ''}" data-key="${escapeHtml(key)}" title="收藏" aria-label="收藏">${isFav ? '★' : '☆'}</button>
       <div class="card-head">
         <img class="icon" src="${escapeHtml(a.artwork_url_100 || '')}" alt="" loading="lazy" />
@@ -392,27 +578,39 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// ── 主题切换 ─────────────────────────────────────────────────────────────
-function effectiveDark() {
-  const t = document.documentElement.getAttribute('data-theme');
-  if (t === 'dark') return true;
-  if (t === 'light') return false;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+// ── 状态栏：SGT 时钟 + 距下次更新倒计时（UTC 00:00 = SGT 08:00）─────────
+function tickStatus() {
+  const now = new Date();
+  const sgt = new Date(now.getTime() + 8 * 3600 * 1000);
+  const clockEl = document.getElementById('liveClock');
+  if (clockEl) clockEl.textContent = 'SGT ' + sgt.toISOString().slice(11, 19);
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0);
+  let s = Math.max(0, Math.floor((next - now.getTime()) / 1000));
+  const hh = String(Math.floor(s / 3600)).padStart(2, '0');
+  const mm = String(Math.floor(s % 3600 / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  const cdEl = document.getElementById('countdown');
+  if (cdEl) cdEl.textContent = `${hh}:${mm}:${ss}`;
 }
+tickStatus();
+setInterval(tickStatus, 1000);
+
+// ── 主题切换（默认深色：科技感主打）──────────────────────────────────────
 function refreshThemeBtn() {
-  document.getElementById('themeBtn').textContent = effectiveDark() ? '☀️' : '🌙';
+  const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+  document.getElementById('themeBtn').textContent = dark ? '☀️' : '🌙';
 }
 document.getElementById('themeBtn').addEventListener('click', () => {
-  const next = effectiveDark() ? 'light' : 'dark';
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'light' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('afc:theme', next);
   refreshThemeBtn();
 });
 (function initTheme() {
   const saved = localStorage.getItem('afc:theme');
-  if (saved === 'dark' || saved === 'light') {
-    document.documentElement.setAttribute('data-theme', saved);
-  }
+  // 只有明确存过 light 才用浅色；否则默认深色
+  document.documentElement.setAttribute('data-theme', saved === 'light' ? 'light' : 'dark');
   refreshThemeBtn();
 })();
 
