@@ -8,7 +8,8 @@
     "crawl": "node scripts/01_crawl.mjs",
     "detect": "node scripts/02_detect.mjs",
     "all": "node scripts/01_crawl.mjs && node scripts/02_detect.mjs",
-    "serve": "python3 -m http.server 8765 --directory public"
+    "serve": "python3 -m http.server 8765 --directory public",
+    "test": "node test/e2e.mjs"
   },
   "engines": {
     "node": ">=18"

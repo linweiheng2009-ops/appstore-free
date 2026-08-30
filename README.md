@@ -45,7 +45,21 @@ node scripts/02_detect.mjs
 # 本地起服务（看前端，必须 serve public/）
 npm run serve
 # → http://localhost:8765
+
+# E2E（Playwright；需要全局 playwright + chromium 浏览器）
+npm test
 ```
+
+### E2E 测试
+
+`test/e2e.mjs` 是隔离的：把 `public/` 复制到 `/tmp/afc-fixture-XXX/`，合成数据只写到 fixture，`public/data/` 永远不会被污染，测试结束还会做一道断言检查。首次跑要装全局 playwright 浏览器：
+
+```bash
+npm i -g playwright
+npx playwright install chromium
+```
+
+如果全局 playwright 不在 `/Users/linweiheng/.npm-global/lib/node_modules/playwright/index.mjs`，改 `test/e2e.mjs` 顶部的 `import` 路径。
 
 ## D1 schema
 
