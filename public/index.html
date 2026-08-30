@@ -544,10 +544,10 @@ function emptyState() {
   if (state.favOnly) {
     return `<div class="empty"><h3>当前筛选下没有收藏的 app</h3><p>试试切换国家 / 时间</p></div>`;
   }
-  // macOS 平台专用空态：Apple top-paid Mac 榜单已下线（2026-08 起 4 国均返回 0），
-  // 当前没有信号源能稳定检测 Mac 真限免，iTunes Search API 方案待 v2。
+  // macOS 平台专用空态：v2 已上线 seed lookup（每日查 38 个热门 Mac app），
+  // 但需要 ≥2 天数据才能检出"今天从付费变免费"。今天刚跑完 baseline 即空。
   if (state.platform === 'mac') {
-    return `<div class="empty"><h3>Mac 真限免监测暂未上线</h3><p>Apple 已下线 top-paid Mac 榜单（4 国实测均返回 0），暂无可用信号源。iOS 端正常运作。</p></div>`;
+    return `<div class="empty"><h3>Mac 监测刚上线，暂无真限免</h3><p>每日跟踪 ~38 个热门 Mac app 的价格变化。需要先有两天数据才能检出"昨天付费、今天免费"的真限免——明天起首批结果可见。</p></div>`;
   }
   if (state.time === 'yesterday') {
     return `<div class="empty"><h3>昨日无真限免</h3><p>也可能数据还没生成——每天 08:00 SGT 更新。</p></div>`;

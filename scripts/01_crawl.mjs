@@ -16,7 +16,7 @@
  *   - 单次拿 N 条含 price/id/bundleId/icon/genre 全字段，零额外 API
  */
 
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -96,6 +96,50 @@ function toRow(entry, region, platform, date) {
   };
 }
 
+/**
+ * iTunes Lookup 结果 → prices row（Mac seed 用的字段名跟 RSS 不一样）
+ */
+function toRowFromLookup(item, region, date) {
+  return {
+    app_id: String(item.trackId || ''),
+    region: region.code,
+    platform: 'mac',
+    date,
+    price: typeof item.price === 'number' ? item.price : 0,
+    currency: item.currency || region.currency,
+    track_name: item.trackName || '',
+    artist_name: item.artistName || '',
+    genre: item.primaryGenreName || '',
+    bundle_id: item.bundleId || '',
+    track_view_url: item.trackViewUrl || '',
+    artwork_url_100: item.artworkUrl100 || '',
+    is_active: 1,
+    crawled_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Mac seed lookup（v2）：Apple top-paid Mac 榜单已下线，备用信号源——
+ * 对一份手工维护的热门 Mac app 列表（scripts/mac-seed.json），每天 4 国各查一次，
+ * 单次 lookup 最多 200 个 bundle ID（一国一次 API 调用）。
+ */
+async function fetchMacSeed(bundleIds, region) {
+  const url = `https://itunes.apple.com/lookup?bundleId=${encodeURIComponent(bundleIds)}&country=${region.lower}&entity=macSoftware`;
+  console.log(`[crawl] ${region.code}/mac/seed looking up ${bundleIds.split(',').length} bundle IDs...`);
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'appstore-free/0.1 (+https://freeapp.laowe.club)' },
+  });
+  if (!res.ok) {
+    throw new Error(`iTunes Lookup ${region.code}/mac HTTP ${res.status}`);
+  }
+  const json = await res.json();
+  const results = json.results || [];
+  // results[0] 可能是空的 lookup 哨兵，需要过滤掉
+  const apps = results.filter((r) => r.wrapperType === 'software' && r.trackId);
+  console.log(`[crawl] ${region.code}/mac/seed got ${apps.length} apps`);
+  return apps;
+}
+
 async function main() {
   if (!existsSync(DATA_DIR)) await mkdir(DATA_DIR, { recursive: true });
 
@@ -115,12 +159,31 @@ async function main() {
     }
   }
 
+  // ── Mac seed lookup（v2）：4 国各查一次，每国最多 200 bundle IDs ─────
+  const seedPath = join(ROOT, 'scripts', 'mac-seed.json');
+  if (existsSync(seedPath)) {
+    const seed = JSON.parse(await readFile(seedPath, 'utf8'));
+    const bundleIds = seed.map((s) => s.bundleId).join(',');
+    for (const region of REGIONS) {
+      try {
+        const apps = await fetchMacSeed(bundleIds, region);
+        const rows = apps.map((a) => toRowFromLookup(a, region, TODAY));
+        allRows.push(...rows);
+        await new Promise((r) => setTimeout(r, 1200));
+      } catch (err) {
+        console.error(`[crawl] ${region.code}/mac/seed FAILED:`, err.message);
+      }
+    }
+  } else {
+    console.log('[crawl] scripts/mac-seed.json 不存在，跳过 Mac seed lookup');
+  }
+
   // 写今日 raw snapshot（commit 用）
   const snapshotPath = join(DATA_DIR, `${TODAY}.json`);
   const snapshot = {
     date: TODAY,
     crawled_at: new Date().toISOString(),
-    source: 'iTunes RSS toppaidapplications + toppaidmacapps',
+    source: 'iTunes RSS toppaidapplications + toppaidmacapps + iTunes Lookup (mac seed)',
     total: allRows.length,
     by_region: allRows.reduce((acc, r) => {
       acc[r.region] = (acc[r.region] || 0) + 1;
