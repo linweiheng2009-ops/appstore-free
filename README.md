@@ -17,14 +17,17 @@
 - 主：**iTunes RSS JSON API**（`/rss/toppaidapplications/limit=N/json`，官方免费无需 key；单国上限 100 条）
 - 辅：RSSHub `apple/appshopper`（验证用，待接入）
 - 4 国：US / CN / JP / SG
+- 2 平台：iOS + macOS（v2，2026-08-30）
+  - iOS 榜单正常
+  - **macOS top-paid 榜单已下线**（Apple 2026-08 起 us/cn/jp/sg/gb/de/fr/ca/au 均返回 0），暂无可用信号源 → macOS 监测的 schema / 前端 / 爬取脚手架已就位，但当前拿不到真限免数据，等 Apple 恢复榜单或换 iTunes Search API（v2）
 
 ## 技术栈
 
 | 层 | 选型 |
 |---|---|
 | 抓取 | Node.js（零依赖） |
-| 价格历史 | Cloudflare D1（SQLite） |
-| 检测 | Node.js（SQL 对比昨日 vs 今日） |
+| 价格历史 | Cloudflare D1（SQLite，PK = app_id + region + platform + date） |
+| 检测 | Node.js（SQL 对比昨日 vs 今日，含 platform） |
 | 前端 | 单文件 HTML（原生 JS，零依赖） |
 | 部署 | Cloudflare Workers（静态资产，`public/`） |
 | cron | GitHub Actions（UTC 00:00 抓取 + 检测 + 部署） |

@@ -58,20 +58,20 @@ async function main() {
   // 尝试查昨日（D1）
   const yesterday = dateMinus(TODAY, 1);
   let yesterdayRows = await queryD1(
-    `SELECT app_id, region, price FROM prices WHERE date = '${yesterday}'`,
+    `SELECT app_id, region, platform, price FROM prices WHERE date = '${yesterday}'`,
   );
   if (!yesterdayRows) {
     yesterdayRows = await loadFromSnapshot(yesterday);
   }
 
   const yesterdayMap = new Map(
-    (yesterdayRows || []).map((r) => [`${r.app_id}:${r.region}`, r.price]),
+    (yesterdayRows || []).map((r) => [`${r.app_id}:${r.region}:${r.platform}`, r.price]),
   );
 
-  // 真限免：今天 0 + 昨天 > 0
+  // 真限免：今天 0 + 昨天 > 0（同一 app+region+platform）
   const freeApps = [];
   for (const t of todayRows) {
-    const key = `${t.app_id}:${t.region}`;
+    const key = `${t.app_id}:${t.region}:${t.platform}`;
     const yPrice = yesterdayMap.get(key);
     if (t.price === 0 && yPrice != null && yPrice > 0) {
       freeApps.push({
@@ -82,10 +82,14 @@ async function main() {
     }
   }
 
-  // 按国家分组
+  // 按国家 + 平台分组
   const byRegion = freeApps.reduce((acc, a) => {
     acc[a.region] = acc[a.region] || [];
     acc[a.region].push(a);
+    return acc;
+  }, {});
+  const byPlatform = freeApps.reduce((acc, a) => {
+    acc[a.platform] = (acc[a.platform] || 0) + 1;
     return acc;
   }, {});
 
@@ -97,6 +101,7 @@ async function main() {
     by_region: Object.fromEntries(
       Object.entries(byRegion).map(([k, v]) => [k, v.length]),
     ),
+    by_platform: byPlatform,
     apps: freeApps,
   };
 
@@ -105,19 +110,24 @@ async function main() {
   // fallback：本地没有历史检测存档时，窗口里只有今天这一天。
   const weekStart = dateMinus(TODAY, 6);
   const weekRows = await queryD1(
-    `SELECT t.*, y.price AS previous_price FROM prices t JOIN prices y ON t.app_id = y.app_id AND t.region = y.region AND y.date = date(t.date, '-1 day') WHERE t.date >= '${weekStart}' AND t.price = 0 AND y.price > 0 ORDER BY t.date DESC, t.region, t.track_name`,
+    `SELECT t.*, y.price AS previous_price FROM prices t JOIN prices y ON t.app_id = y.app_id AND t.region = y.region AND t.platform = y.platform AND y.date = date(t.date, '-1 day') WHERE t.date >= '${weekStart}' AND t.price = 0 AND y.price > 0 ORDER BY t.date DESC, t.region, t.track_name`,
   );
   const weekApps = weekRows
     ? weekRows.map((r) => ({ ...r, previous_currency: r.currency, free_date: r.date }))
     : freeApps.map((a) => ({ ...a, free_date: TODAY }));
   const weekByRegion = {};
-  for (const a of weekApps) weekByRegion[a.region] = (weekByRegion[a.region] || 0) + 1;
+  const weekByPlatform = {};
+  for (const a of weekApps) {
+    weekByRegion[a.region] = (weekByRegion[a.region] || 0) + 1;
+    weekByPlatform[a.platform] = (weekByPlatform[a.platform] || 0) + 1;
+  }
 
   const weekOut = {
     generated_at: new Date().toISOString(),
     window: { start: weekStart, end: TODAY },
     total: weekApps.length,
     by_region: weekByRegion,
+    by_platform: weekByPlatform,
     apps: weekApps,
   };
 

@@ -28,28 +28,35 @@ await cp(PUBLIC, FIXTURE, { recursive: true });
 console.log('[fixture]', FIXTURE, '（public/ 的隔离副本）');
 
 // ── 2. 合成数据（3 今日 + 1 昨日 + 1 翻转去重测试）─────────────────────
-const mk = (id, region, name, genre, price, currency, date) => ({
-  app_id: id, region, track_name: name, artist_name: 'Test Dev', genre,
+const mk = (id, region, name, genre, price, currency, date, platform = 'ios') => ({
+  app_id: id, region, platform, track_name: name, artist_name: 'Test Dev', genre,
   price: 0, currency, previous_price: price, previous_currency: currency,
   track_view_url: 'https://apps.apple.com/app/id' + id,
   artwork_url_100: 'https://picsum.photos/seed/' + id + '/100',
   bundle_id: 'com.test.' + id, date, free_date: date,
 });
-const us1 = mk('1', 'US', 'US Photo Pro', 'Photo & Video', 4.99, 'USD', '2026-08-28');
-const cn1 = mk('2', 'CN', '中文笔记',     'Utilities',      6,    'CNY', '2026-08-28');
-const jp1 = mk('3', 'JP', 'JP Game X',   'Games',          1200, 'JPY', '2026-08-28');
-const y1  = mk('4', 'SG', 'SG Yesterday', 'Games',         2.99, 'SGD', '2026-08-27');
-const us1dup = { ...us1, free_date: '2026-08-26' }; // 同 app 翻转两次 → 7 日视图去重
+const us1 = mk('1', 'US', 'US Photo Pro', 'Photo & Video', 4.99, 'USD', '2026-08-28', 'ios');
+const cn1 = mk('2', 'CN', '中文笔记',     'Utilities',      6,    'CNY', '2026-08-28', 'ios');
+const jp1 = mk('3', 'JP', 'JP Game X',   'Games',          1200, 'JPY', '2026-08-28', 'ios');
+const y1  = mk('4', 'SG', 'SG Yesterday', 'Games',         2.99, 'SGD', '2026-08-27', 'ios');
+const us1dup = { ...us1, free_date: '2026-08-26' }; // 同 iOS app 翻转两次 → 7 日视图去重
+const mac1 = mk('5', 'US', 'Pro Mac App', 'Developer Tools', 19.99, 'USD', '2026-08-28', 'mac');
+const mac2 = mk('7', 'JP', 'Mac Yesterday', 'Games',         980, 'JPY', '2026-08-27', 'mac');
 
 await writeFile(join(FIXTURE, 'data', 'today_free.json'), JSON.stringify({
-  date: '2026-08-28', detected_at: '2026-08-28T00:10:00Z', method: 'test', total: 3,
-  by_region: { US: 1, CN: 1, JP: 1 }, apps: [us1, cn1, jp1],
+  date: '2026-08-28', detected_at: '2026-08-28T00:10:00Z', method: 'test',
+  total: 4,
+  by_region: { US: 2, CN: 1, JP: 1, SG: 0 },
+  by_platform: { ios: 3, mac: 1 },
+  apps: [us1, cn1, jp1, mac1],
 }, null, 2));
 await writeFile(join(FIXTURE, 'data', 'week_free.json'), JSON.stringify({
   generated_at: '2026-08-28T00:10:00Z',
   window: { start: '2026-08-22', end: '2026-08-28' },
-  total: 5, by_region: { US: 2, CN: 1, JP: 1, SG: 1 },
-  apps: [us1, cn1, jp1, y1, us1dup],
+  total: 7,
+  by_region: { US: 3, CN: 1, JP: 2, SG: 1 },
+  by_platform: { ios: 5, mac: 2 },
+  apps: [us1, cn1, jp1, y1, us1dup, mac1, mac2],
 }, null, 2));
 
 // ── 3. 启动 http server（固定端口 8770，避免正则解析端口的不确定性）──────
@@ -81,11 +88,23 @@ page.on('pageerror', (e) => console.log('  [pageerror]', e.message));
 await page.goto(BASE, { waitUntil: 'networkidle' });
 
 const timeTabs = await page.locator('#timeTabs .tab').allTextContents();
-ok(timeTabs[0].includes('今日') && timeTabs[0].includes('3'), '今日 tab 计数=3');
-ok(timeTabs.some(t => t.includes('昨日') && t.includes('1')), '昨日 tab 计数=1');
-ok(timeTabs.some(t => t.includes('近 7 日') && t.includes('4')), '近7日 tab 去重后计数=4');
-ok(await page.locator('.card').count() === 3, '今日 3 张卡片');
+ok(timeTabs[0].includes('今日') && timeTabs[0].includes('4'), '今日 tab 计数=4');
+ok(timeTabs.some(t => t.includes('昨日') && t.includes('2')), '昨日 tab 计数=2');
+ok(timeTabs.some(t => t.includes('近 7 日') && t.includes('6')), '近7日 tab 去重后计数=6');
+ok(await page.locator('.card').count() === 4, '今日 4 张卡片（含 mac）');
 ok(await page.locator('.tile').count() === 3, '3 个数据砖');
+
+// ── 平台 tabs ──
+const platformTabs = await page.locator('#platformTabs .tab').allTextContents();
+ok(platformTabs[0].includes('全部') && platformTabs[0].includes('4'), '平台 ALL 计数=4');
+ok(platformTabs.some(t => t.includes('iOS') && t.includes('3')), 'iOS 计数=3');
+ok(platformTabs.some(t => t.includes('macOS') && t.includes('1')), 'macOS 计数=1');
+await page.locator('#platformTabs .tab', { hasText: 'macOS' }).click();
+ok(await page.locator('.card').count() === 1, 'macOS 过滤后 1 张');
+ok(await page.locator('.card .name').first().textContent().then(t => t.includes('Pro Mac App')), 'macOS 那张是 Pro Mac App');
+await page.locator('#platformTabs .tab', { hasText: 'iOS' }).click();
+ok(await page.locator('.card').count() === 3, 'iOS 过滤后 3 张');
+await page.locator('#platformTabs .tab', { hasText: '全部' }).click();
 
 const usCard = page.locator('.card', { hasText: 'US Photo Pro' });
 ok(await usCard.locator('.badge-was').textContent().then(t => t.includes('$4.99') && t.includes('≈¥36')), 'USD $4.99 → ≈¥36');
@@ -95,25 +114,25 @@ const cnCard = page.locator('.card', { hasText: '中文笔记' });
 ok(await cnCard.locator('.badge-was').textContent().then(t => t.includes('¥6') && !t.includes('≈')), 'CNY 不重复换算');
 
 await page.locator('#regionTabs .tab', { hasText: '美国' }).click();
-ok(await page.locator('.card').count() === 1, '美国 tab 过滤后 1 张');
+ok(await page.locator('.card').count() === 2, '美国 tab 过滤后 2 张（iOS US Photo + Mac Pro App）');
 await page.locator('#regionTabs .tab', { hasText: '全部' }).click();
 await page.locator('#filters .chip', { hasText: 'Games' }).click();
 ok(await page.locator('.card').count() === 1, 'Games 类目过滤后 1 张');
 await page.locator('#filters .chip', { hasText: '全部类目' }).click();
 
 await page.locator('#filters .chip', { hasText: '≈¥100+' }).click();
-ok(await page.locator('.card').count() === 0, '≈¥100+ 为 0 张');
+ok(await page.locator('.card').count() === 1, '≈¥100+ 为 1 张（Pro Mac App $19.99 ≈ ¥144）');
 await page.locator('#filters .chip', { hasText: '≈¥30–100' }).click();
 ok(await page.locator('.card').count() === 2, '≈¥30–100 两张');
 await page.locator('#filters .chip', { hasText: '全部价位' }).click();
 
 await page.locator('#timeTabs .tab', { hasText: '昨日' }).click();
-ok(await page.locator('.card').count() === 1, '昨日 1 张');
+ok(await page.locator('.card').count() === 2, '昨日 2 张（SG + Mac Yesterday）');
 ok(await page.locator('.badge-date').first().textContent().then(t => t.includes('08-27')), '日期徽章 08-27');
 
 await page.locator('#timeTabs .tab', { hasText: '近 7 日' }).click();
-ok(await page.locator('.card').count() === 4, '近 7 日去重后 4 张');
-ok(await page.locator('.badge-date').count() === 4, '近 7 日每卡有日期徽章');
+ok(await page.locator('.card').count() === 6, '近 7 日去重后 6 张');
+ok(await page.locator('.badge-date').count() === 6, '近 7 日每卡有日期徽章');
 
 await page.locator('#timeTabs .tab', { hasText: '今日' }).click();
 await page.locator('.card', { hasText: 'US Photo Pro' }).locator('.fav').click();

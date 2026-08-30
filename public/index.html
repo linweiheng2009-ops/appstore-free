@@ -245,7 +245,7 @@
   <div class="head-row">
     <div>
       <h1>🆓 AppStore限免APP <span class="tag">BETA</span></h1>
-      <div class="sub">每日跟踪 iOS 真限免 · 价格状态变化检测 · 跨 US / CN / JP / SG 四区</div>
+      <div class="sub">每日跟踪 iOS + macOS 真限免 · 价格状态变化检测 · 跨 US / CN / JP / SG 四区</div>
       <div class="status-line">
         <span class="live-dot"></span>
         <span>TRACKING ONLINE</span>
@@ -253,6 +253,8 @@
         <span id="liveClock">SGT --:--:--</span>
         <span class="sep">·</span>
         <span>距下次更新 <span id="countdown">--:--:--</span></span>
+        <span class="sep">·</span>
+        <span>iOS + macOS · 4 国</span>
       </div>
     </div>
     <button class="theme-btn" id="themeBtn" title="切换深/浅色" aria-label="切换深/浅色">☀️</button>
@@ -263,6 +265,7 @@
   <div class="stats" id="stats"></div>
   <div class="panel">
     <div class="tabs" id="timeTabs"></div>
+    <div class="tabs" id="platformTabs"></div>
     <div class="tabs" id="regionTabs"></div>
     <div class="filters" id="filters"></div>
   </div>
@@ -271,7 +274,7 @@
 
 <footer>
   <div>DATA SOURCE: iTunes RSS (official) · DETECT: <code>price_today=0 AND price_yesterday&gt;0</code></div>
-  <div>不收录内购限免 / 促销码限免（API 看不到）· ¥ 换算为静态汇率近似 · v1 不做 macOS</div>
+  <div>不收录内购限免 / 促销码限免（API 看不到）· ¥ 换算为静态汇率近似 · 覆盖 iOS + macOS</div>
   <div><a href="https://freeapp.laowe.club/">freeapp.laowe.club</a> · <a href="https://github.com/linweiheng2009-ops/appstore-free">GitHub</a></div>
 </footer>
 
@@ -282,6 +285,12 @@ const REGIONS = [
   { code: 'CN', name: '中国', emoji: '🇨🇳' },
   { code: 'JP', name: '日本', emoji: '🇯🇵' },
   { code: 'SG', name: '新加坡', emoji: '🇸🇬' },
+];
+
+const PLATFORMS = [
+  { code: 'ALL', name: '全部', emoji: '🌐' },
+  { code: 'ios', name: 'iOS', emoji: '📱' },
+  { code: 'mac', name: 'macOS', emoji: '💻' },
 ];
 
 // 静态近似汇率（→ CNY）。无外部依赖；偏差可接受，后续可换汇率 API。
@@ -299,6 +308,7 @@ const PRICE_BUCKETS = [
 const state = {
   time: 'today',    // today | yesterday | week
   region: 'ALL',
+  platform: 'ALL',  // ALL | ios | mac
   genre: 'ALL',
   price: 'ALL',
   favOnly: false,
@@ -316,6 +326,8 @@ function saveFavs() {
   localStorage.setItem('afc:favs', JSON.stringify([...favs]));
 }
 function favKey(a) { return `${a.app_id}:${a.region}`; }
+// 周视图去重 key：含 platform，避免 iOS / macOS 同 app_id 误合并
+function dedupKey(a) { return `${a.app_id}:${a.region}:${a.platform || 'ios'}`; }
 
 async function load() {
   const results = await Promise.allSettled([
@@ -345,10 +357,10 @@ function baseApps() {
     const y = dateMinus(ref, 1);
     return apps.filter((a) => a.free_date === y);
   }
-  // week：同一 app 多次翻转只保留最近一次
+  // week：同一 app 多次翻转只保留最近一次（按 app+region+platform 去重）
   const seen = new Map();
   for (const a of apps) {
-    const k = favKey(a);
+    const k = dedupKey(a);
     if (!seen.has(k) || a.free_date > seen.get(k).free_date) seen.set(k, a);
   }
   return [...seen.values()];
@@ -356,6 +368,7 @@ function baseApps() {
 
 function filterApps(list) {
   return list.filter((a) => {
+    if (state.platform !== 'ALL' && (a.platform || 'ios') !== state.platform) return false;
     if (state.region !== 'ALL' && a.region !== state.region) return false;
     if (state.genre !== 'ALL' && a.genre !== state.genre) return false;
     if (state.price !== 'ALL') {
@@ -370,6 +383,7 @@ function filterApps(list) {
 // ── 渲染 ─────────────────────────────────────────────────────────────────
 function render() {
   renderTimeTabs();
+  renderPlatformTabs();
   renderRegionTabs();
   renderFilters();
   renderStats();
@@ -382,7 +396,7 @@ function renderTimeTabs() {
   const ref = todayData?.date || weekData?.window?.end || '';
   const y = dateMinus(ref, 1);
   const yesterdayCount = all.filter((a) => a.free_date === y).length;
-  const weekCount = new Set(all.map(favKey)).size;
+  const weekCount = new Set(all.map(dedupKey)).size;
 
   const defs = [
     { id: 'today', label: '今日', count: today },
@@ -402,8 +416,21 @@ function renderTimeTabs() {
   });
 }
 
-function renderRegionTabs() {
+function renderPlatformTabs() {
   const base = baseApps();
+  const el = document.getElementById('platformTabs');
+  el.innerHTML = PLATFORMS.map((p) => {
+    const count = p.code === 'ALL' ? base.length : base.filter((a) => (a.platform || 'ios') === p.code).length;
+    return `<button class="tab ${p.code === state.platform ? 'active' : ''}" data-platform="${p.code}">${p.emoji} ${p.name} (${count})</button>`;
+  }).join('');
+  el.querySelectorAll('.tab').forEach((t) => {
+    t.addEventListener('click', () => { state.platform = t.dataset.platform; render(); });
+  });
+}
+
+function renderRegionTabs() {
+  const base = baseApps().filter((a) =>
+    state.platform === 'ALL' || (a.platform || 'ios') === state.platform);
   const el = document.getElementById('regionTabs');
   el.innerHTML = REGIONS.map((r) => {
     const count = r.code === 'ALL' ? base.length : base.filter((a) => a.region === r.code).length;
@@ -465,7 +492,7 @@ function renderStats() {
   } else {
     num = weekData?.total ?? 0; numLabel = '近 7 日限免次数';
     dateText = `${weekData?.window?.start || ''} ~ ${weekData?.window?.end || ''}`; dateLabel = '回看窗口';
-    thirdText = String(new Set((weekData?.apps || []).map(favKey)).size); thirdLabel = '去重后应用数';
+    thirdText = String(new Set((weekData?.apps || []).map(dedupKey)).size); thirdLabel = '去重后应用数';
   }
   el.innerHTML = `
     <div class="tile"><div class="tile__num">${num}</div><div class="tile__label">${numLabel}</div></div>
@@ -516,6 +543,11 @@ function emptyState() {
   }
   if (state.favOnly) {
     return `<div class="empty"><h3>当前筛选下没有收藏的 app</h3><p>试试切换国家 / 时间</p></div>`;
+  }
+  // macOS 平台专用空态：Apple top-paid Mac 榜单已下线（2026-08 起 4 国均返回 0），
+  // 当前没有信号源能稳定检测 Mac 真限免，iTunes Search API 方案待 v2。
+  if (state.platform === 'mac') {
+    return `<div class="empty"><h3>Mac 真限免监测暂未上线</h3><p>Apple 已下线 top-paid Mac 榜单（4 国实测均返回 0），暂无可用信号源。iOS 端正常运作。</p></div>`;
   }
   if (state.time === 'yesterday') {
     return `<div class="empty"><h3>昨日无真限免</h3><p>也可能数据还没生成——每天 08:00 SGT 更新。</p></div>`;
