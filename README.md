@@ -17,6 +17,7 @@
 - 主：**iTunes RSS JSON API**（`/rss/toppaidapplications/limit=N/json`，官方免费无需 key；单国上限 100 条）
 - 辅：RSSHub `apple/appshopper`（验证用，待接入）
 - 4 国：US / CN / JP / SG
+  - 2026-08-30 加 TW / HK → **6 国**（US / CN / JP / SG / TW / HK）
 - 2 平台：iOS + macOS
   - iOS：RSS top-paid 榜单（4 国 ×100）
   - **macOS**：top-paid Mac 榜单已下线，备用方案 —— `scripts/mac-seed.json` 维护 ~38 个热门 Mac app 的 bundle ID，每天 4 国各查一次 iTunes Lookup（4 次 API 调用）

@@ -116,6 +116,11 @@ ok(await cnCard.locator('.badge-was').textContent().then(t => t.includes('¥6') 
 await page.locator('#regionTabs .tab', { hasText: '美国' }).click();
 ok(await page.locator('.card').count() === 2, '美国 tab 过滤后 2 张（iOS US Photo + Mac Pro App）');
 await page.locator('#regionTabs .tab', { hasText: '全部' }).click();
+await page.locator('#regionTabs .tab', { hasText: '台湾' }).click();
+ok(await page.locator('.card').count() === 0, '台湾 tab 过滤后 0 张（fixture 无 TW 数据）');
+await page.locator('#regionTabs .tab', { hasText: '香港' }).click();
+ok(await page.locator('.card').count() === 0, '香港 tab 过滤后 0 张（fixture 无 HK 数据）');
+await page.locator('#regionTabs .tab', { hasText: '全部' }).click();
 await page.locator('#filters .chip', { hasText: 'Games' }).click();
 ok(await page.locator('.card').count() === 1, 'Games 类目过滤后 1 张');
 await page.locator('#filters .chip', { hasText: '全部类目' }).click();
