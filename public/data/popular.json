@@ -1,0 +1,140 @@
+{
+  "date": "2026-08-30",
+  "generated_at": "2026-08-30T02:52:38.488Z",
+  "source": "iOS 付费 app 价格倒序 · 去重 top 12",
+  "total": 12,
+  "apps": [
+    {
+      "app_id": "373493387",
+      "region": "JP",
+      "currency": "JPY",
+      "price": 4000,
+      "track_name": "AnkiMobile Flashcards",
+      "artist_name": "Anki Software, LLC",
+      "genre": "教育",
+      "track_view_url": "https://apps.apple.com/jp/app/ankimobile-flashcards/id373493387?uo=2",
+      "artwork_url_100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/30/6b/da/306bdac5-3088-c97f-c682-e4626bfc6b43/AppIcon-0-0-1x_U007emarketing-0-5-0-85-220.png/100x100bb.png"
+    },
+    {
+      "app_id": "6760401505",
+      "region": "JP",
+      "currency": "JPY",
+      "price": 3900,
+      "track_name": "ファンタジーライフｉ",
+      "artist_name": "Level-5 Inc.",
+      "genre": "ゲーム",
+      "track_view_url": "https://apps.apple.com/jp/app/%E3%83%95%E3%82%A1%E3%83%B3%E3%82%BF%E3%82%B8%E3%83%BC%E3%83%A9%E3%82%A4%E3%83%95%EF%BD%89/id6760401505?uo=2",
+      "artwork_url_100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/f8/53/6f/f8536f29-5460-8696-25f5-a758f56e54e5/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.png"
+    },
+    {
+      "app_id": "1496918059",
+      "region": "JP",
+      "currency": "JPY",
+      "price": 3800,
+      "track_name": "ドラゴンクエストモンスターズ2　イルとルカの不思議な鍵SP",
+      "artist_name": "SQUARE ENIX",
+      "genre": "ゲーム",
+      "track_view_url": "https://apps.apple.com/jp/app/%E3%83%89%E3%83%A9%E3%82%B4%E3%83%B3%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%83%A2%E3%83%B3%E3%82%B9%E3%82%BF%E3%83%BC%E3%82%BA2-%E3%82%A4%E3%83%AB%E3%81%A8%E3%83%AB%E3%82%AB%E3%81%AE%E4%B8%8D%E6%80%9D%E8%AD%B0%E3%81%AA%E9%8D%B5sp/id1496918059?uo=2",
+      "artwork_url_100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/75/0c/f6/750cf65e-6f32-ccaa-66cc-abb8648e59b1/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.png"
+    },
+    {
+      "app_id": "730263398",
+      "region": "JP",
+      "currency": "JPY",
+      "price": 3800,
+      "track_name": "ドラゴンクエストVIII 空と海と大地と呪われし姫君",
+      "artist_name": "SQUARE ENIX",
+      "genre": "ゲーム",
+      "track_view_url": "https://apps.apple.com/jp/app/%E3%83%89%E3%83%A9%E3%82%B4%E3%83%B3%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88viii-%E7%A9%BA%E3%81%A8%E6%B5%B7%E3%81%A8%E5%A4%A7%E5%9C%B0%E3%81%A8%E5%91%AA%E3%82%8F%E3%82%8C%E3%81%97%E5%A7%AB%E5%90%9B/id730263398?uo=2",
+      "artwork_url_100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/dc/3e/84/dc3e846a-19f2-e301-53d9-2b8ce9b72a74/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.png"
+    },
+    {
+      "app_id": "6754688764",
+      "region": "JP",
+      "currency": "JPY",
+      "price": 3500,
+      "track_name": "不思議のダンジョン 風来のシレン6plus",
+      "artist_name": "Spike-Chunsoft CO, LTD.",
+      "genre": "ゲーム",
+      "track_view_url": "https://apps.apple.com/jp/app/%E4%B8%8D%E6%80%9D%E8%AD%B0%E3%81%AE%E3%83%80%E3%83%B3%E3%82%B8%E3%83%A7%E3%83%B3-%E9%A2%A8%E6%9D%A5%E3%81%AE%E3%82%B7%E3%83%AC%E3%83%B36plus/id6754688764?uo=2",
+      "artwork_url_100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/77/7f/22/777f228c-a124-bfa0-06ca-cf3ec195a610/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.png"
+    },
+    {
+      "app_id": "6755099956",
+      "region": "JP",
+      "currency": "JPY",
+      "price": 3480,
+      "track_name": "スマスロ ゴッドイーターリザレクション",
+      "artist_name": "Sammy Networks Co., Ltd.",
+      "genre": "ゲーム",
+      "track_view_url": "https://apps.apple.com/jp/app/%E3%82%B9%E3%83%9E%E3%82%B9%E3%83%AD-%E3%82%B4%E3%83%83%E3%83%89%E3%82%A4%E3%83%BC%E3%82%BF%E3%83%BC%E3%83%AA%E3%82%B6%E3%83%AC%E3%82%AF%E3%82%B7%E3%83%A7%E3%83%B3/id6755099956?uo=2",
+      "artwork_url_100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/d3/22/a4/d322a490-96e6-c9ce-764f-f9764446d282/AppIcon-1x_U007emarketing-0-7-0-85-220-0.png/100x100bb.png"
+    },
+    {
+      "app_id": "1372670435",
+      "region": "JP",
+      "currency": "JPY",
+      "price": 3200,
+      "track_name": "ドラゴンクエストモンスターズ　テリーのワンダーランドSP",
+      "artist_name": "SQUARE ENIX",
+      "genre": "ゲーム",
+      "track_view_url": "https://apps.apple.com/jp/app/%E3%83%89%E3%83%A9%E3%82%B4%E3%83%B3%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%83%A2%E3%83%B3%E3%82%B9%E3%82%BF%E3%83%BC%E3%82%BA-%E3%83%86%E3%83%AA%E3%83%BC%E3%81%AE%E3%83%AF%E3%83%B3%E3%83%80%E3%83%BC%E3%83%A9%E3%83%B3%E3%83%89sp/id1372670435?uo=2",
+      "artwork_url_100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/29/e0/1e/29e01e45-679f-bcc9-aef0-7930643ee575/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.png"
+    },
+    {
+      "app_id": "1117998129",
+      "region": "JP",
+      "currency": "JPY",
+      "price": 3000,
+      "track_name": "ヒューマン・アナトミー・アトラス2026",
+      "artist_name": "Visible Body Apps",
+      "genre": "メディカル",
+      "track_view_url": "https://apps.apple.com/jp/app/%E3%83%92%E3%83%A5%E3%83%BC%E3%83%9E%E3%83%B3-%E3%82%A2%E3%83%8A%E3%83%88%E3%83%9F%E3%83%BC-%E3%82%A2%E3%83%88%E3%83%A9%E3%82%B92026/id1117998129?uo=2",
+      "artwork_url_100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/3d/b7/1f/3db71ff7-569b-b1a3-9f14-88d7bbb57a1a/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.png"
+    },
+    {
+      "app_id": "6473873659",
+      "region": "JP",
+      "currency": "JPY",
+      "price": 3000,
+      "track_name": "Pとある魔術の禁書目録２",
+      "artist_name": "SUNSOFT",
+      "genre": "ゲーム",
+      "track_view_url": "https://apps.apple.com/jp/app/p%E3%81%A8%E3%81%82%E3%82%8B%E9%AD%94%E8%A1%93%E3%81%AE%E7%A6%81%E6%9B%B8%E7%9B%AE%E9%8C%B2%EF%BC%92/id6473873659?uo=2",
+      "artwork_url_100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/a7/9e/9c/a79e9c8d-d7c1-22b4-5f37-23647927dcdf/AppIcon-0-0-1x_U007epad-0-1-85-220.png/100x100bb.png"
+    },
+    {
+      "app_id": "6761354266",
+      "region": "JP",
+      "currency": "JPY",
+      "price": 2980,
+      "track_name": "スマスロ 攻殻機動隊",
+      "artist_name": "Sammy Networks Co., Ltd.",
+      "genre": "ゲーム",
+      "track_view_url": "https://apps.apple.com/jp/app/%E3%82%B9%E3%83%9E%E3%82%B9%E3%83%AD-%E6%94%BB%E6%AE%BB%E6%A9%9F%E5%8B%95%E9%9A%8A/id6761354266?uo=2",
+      "artwork_url_100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/4d/a1/67/4da1673a-808e-5810-79da-67ae731186c3/AppIcon-0-0-1x_U007ephone-0-1-85-220.png/100x100bb.png"
+    },
+    {
+      "app_id": "6747067433",
+      "region": "JP",
+      "currency": "JPY",
+      "price": 2980,
+      "track_name": "e女神のカフェテラス",
+      "artist_name": "SUNSOFT",
+      "genre": "ゲーム",
+      "track_view_url": "https://apps.apple.com/jp/app/e%E5%A5%B3%E7%A5%9E%E3%81%AE%E3%82%AB%E3%83%95%E3%82%A7%E3%83%86%E3%83%A9%E3%82%B9/id6747067433?uo=2",
+      "artwork_url_100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/b0/e8/80/b0e88002-3a40-bf50-61d9-5cb1ffd46f99/AppIcon-0-0-1x_U007epad-0-1-85-220.png/100x100bb.png"
+    },
+    {
+      "app_id": "6755508035",
+      "region": "JP",
+      "currency": "JPY",
+      "price": 2980,
+      "track_name": "スマスロ 東京リベンジャーズ",
+      "artist_name": "Sammy Networks Co., Ltd.",
+      "genre": "ゲーム",
+      "track_view_url": "https://apps.apple.com/jp/app/%E3%82%B9%E3%83%9E%E3%82%B9%E3%83%AD-%E6%9D%B1%E4%BA%AC%E3%83%AA%E3%83%99%E3%83%B3%E3%82%B8%E3%83%A3%E3%83%BC%E3%82%BA/id6755508035?uo=2",
+      "artwork_url_100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/81/1e/a7/811ea7a4-1d8f-51a8-442b-592297be126b/AppIcon-1x_U007ephone-0-1-85-220-0.png/100x100bb.png"
+    }
+  ]
+}

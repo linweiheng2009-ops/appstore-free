@@ -199,6 +199,9 @@
     font-family: var(--mono); letter-spacing: .3px;
   }
   .badge-free { background: var(--free-grad); color: #fff; box-shadow: 0 0 12px var(--glow); }
+  .badge-popular { background: linear-gradient(135deg, #818cf8, #c084fc); color: #fff; box-shadow: 0 0 12px rgba(129, 140, 248, .35); }
+  .badge-rank { background: rgba(0, 0, 0, .35); color: #fff; font-family: var(--mono); }
+  :root[data-theme="light"] .badge-rank { background: var(--ink); color: var(--bg); }
   .badge-was { background: var(--panel); border: 1px solid var(--line); color: var(--ink); }
   .badge-date { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
   .badge-genre { background: transparent; border: 1px solid var(--line); color: var(--muted); }
@@ -209,6 +212,24 @@
   }
   .fav:hover { transform: scale(1.25); color: var(--gold); }
   .fav.on { color: var(--gold); text-shadow: 0 0 12px rgba(251, 191, 36, .5); }
+
+  /* ── 热门付费区 ─────────────────────────────────────── */
+  .popular-section {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px dashed var(--line-strong);
+  }
+  .popular-section[hidden] { display: none; }
+  .popular-head { margin-bottom: 18px; }
+  .popular-head h2 {
+    font-size: 18px; font-weight: 700; letter-spacing: -.2px;
+    background: linear-gradient(92deg, #818cf8, #c084fc);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .popular-sub {
+    color: var(--muted); font-family: var(--mono); font-size: 11px;
+    letter-spacing: 1px; margin-top: 4px;
+  }
 
   /* ── 空态 / 加载 ─────────────────────────────────────── */
   .empty {
@@ -270,6 +291,14 @@
     <div class="filters" id="filters"></div>
   </div>
   <div id="content"><div class="loading">LOADING DATA...</div></div>
+
+  <section class="popular-section" id="popularSection" hidden>
+    <div class="popular-head">
+      <h2>🔥 今日热门付费 APP</h2>
+      <p class="popular-sub">基线日也有内容 · 按价格倒序 · 去重 · 取自今日爬取的 iOS top paid</p>
+    </div>
+    <div class="grid" id="popularGrid"></div>
+  </section>
 </main>
 
 <footer>
@@ -318,6 +347,7 @@ const state = {
 
 let todayData = null;  // ./data/today_free.json
 let weekData = null;   // ./data/week_free.json
+let popularData = null; // ./data/popular.json
 let favs = loadFavs();
 
 function loadFavs() {
@@ -335,9 +365,11 @@ async function load() {
   const results = await Promise.allSettled([
     fetch('./data/today_free.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
     fetch('./data/week_free.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
+    fetch('./data/popular.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
   ]);
   todayData = results[0].status === 'fulfilled' ? results[0].value : null;
   weekData = results[1].status === 'fulfilled' ? results[1].value : null;
+  popularData = results[2].status === 'fulfilled' ? results[2].value : null;
 
   if (!todayData && !weekData) {
     document.getElementById('content').innerHTML =
@@ -390,6 +422,7 @@ function render() {
   renderFilters();
   renderStats();
   renderContent();
+  renderPopularSection();
 }
 
 function renderTimeTabs() {
@@ -537,6 +570,45 @@ function renderContent() {
       }
     });
   });
+}
+
+function renderPopularSection() {
+  const section = document.getElementById('popularSection');
+  const grid = document.getElementById('popularGrid');
+  const apps = popularData?.apps || [];
+  if (apps.length === 0) { section.hidden = true; return; }
+  section.hidden = false;
+  grid.innerHTML = apps.map((a, i) => popularCard(a, i)).join('');
+  grid.querySelectorAll('.card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const url = card.dataset.url;
+      if (url && url !== '#') window.open(url, '_blank');
+    });
+  });
+}
+
+function popularCard(a, idx) {
+  const priceText = formatPrice(a.price, a.currency);
+  const cny = toCNY(a.price, a.currency);
+  const cnyNote = a.currency === 'CNY' ? '' : ` ≈¥${Math.round(cny)}`;
+  return `
+    <div class="card" style="--i:${Math.min(idx, 16)}" data-url="${escapeHtml(a.track_view_url || '#')}">
+      <div class="card-head">
+        <img class="icon" src="${escapeHtml(a.artwork_url_100 || '')}" alt="" loading="lazy" />
+        <div class="meta">
+          <div class="name">${escapeHtml(a.track_name || '(unknown)')}</div>
+          <div class="artist">${escapeHtml(a.artist_name || '')}</div>
+          <div class="badge-row">
+            <span class="badge badge-rank">#${idx + 1}</span>
+            <span class="badge badge-popular">热门</span>
+            <span class="badge badge-was">${priceText}${cnyNote}</span>
+            <span class="badge badge-genre">${a.region}</span>
+            ${a.genre ? `<span class="badge badge-genre">${escapeHtml(a.genre)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function emptyState() {

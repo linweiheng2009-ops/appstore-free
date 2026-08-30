@@ -59,6 +59,17 @@ await writeFile(join(FIXTURE, 'data', 'week_free.json'), JSON.stringify({
   apps: [us1, cn1, jp1, y1, us1dup, mac1, mac2],
 }, null, 2));
 
+// 热门付费 APP fixture：3 个高价的 iOS 付费 app（仅前段需要渲染时序稳定）
+await writeFile(join(FIXTURE, 'data', 'popular.json'), JSON.stringify({
+  date: '2026-08-28', generated_at: '2026-08-28T00:10:00Z', source: 'test fixture',
+  total: 3,
+  apps: [
+    { app_id: 'P1', region: 'US', currency: 'USD', price: 59.99, track_name: 'Expensive Pro', artist_name: 'Big Co', genre: 'Productivity', track_view_url: 'https://apps.apple.com/app/idP1', artwork_url_100: 'https://picsum.photos/seed/P1/100' },
+    { app_id: 'P2', region: 'CN', currency: 'CNY', price: 198,   track_name: '高价工具',     artist_name: '本地工作室', genre: '工具',     track_view_url: 'https://apps.apple.com/app/idP2', artwork_url_100: 'https://picsum.photos/seed/P2/100' },
+    { app_id: 'P3', region: 'JP', currency: 'JPY', price: 4800,   track_name: 'JP Premium',   artist_name: 'JP Studio', genre: 'Games',     track_view_url: 'https://apps.apple.com/app/idP3', artwork_url_100: 'https://picsum.photos/seed/P3/100' },
+  ],
+}, null, 2));
+
 // ── 3. 启动 http server（固定端口 8770，避免正则解析端口的不确定性）──────
 const PORT = 8770;
 const server = spawn('python3', ['-m', 'http.server', String(PORT), '--directory', FIXTURE],
@@ -91,7 +102,7 @@ const timeTabs = await page.locator('#timeTabs .tab').allTextContents();
 ok(timeTabs[0].includes('今日') && timeTabs[0].includes('4'), '今日 tab 计数=4');
 ok(timeTabs.some(t => t.includes('昨日') && t.includes('2')), '昨日 tab 计数=2');
 ok(timeTabs.some(t => t.includes('近 7 日') && t.includes('6')), '近7日 tab 去重后计数=6');
-ok(await page.locator('.card').count() === 4, '今日 4 张卡片（含 mac）');
+ok(await page.locator('#content .card').count() === 4, '今日 4 张卡片（含 mac）');
 ok(await page.locator('.tile').count() === 3, '3 个数据砖');
 
 // ── 平台 tabs ──
@@ -100,10 +111,10 @@ ok(platformTabs[0].includes('全部') && platformTabs[0].includes('4'), '平台 
 ok(platformTabs.some(t => t.includes('iOS') && t.includes('3')), 'iOS 计数=3');
 ok(platformTabs.some(t => t.includes('macOS') && t.includes('1')), 'macOS 计数=1');
 await page.locator('#platformTabs .tab', { hasText: 'macOS' }).click();
-ok(await page.locator('.card').count() === 1, 'macOS 过滤后 1 张');
+ok(await page.locator('#content .card').count() === 1, 'macOS 过滤后 1 张');
 ok(await page.locator('.card .name').first().textContent().then(t => t.includes('Pro Mac App')), 'macOS 那张是 Pro Mac App');
 await page.locator('#platformTabs .tab', { hasText: 'iOS' }).click();
-ok(await page.locator('.card').count() === 3, 'iOS 过滤后 3 张');
+ok(await page.locator('#content .card').count() === 3, 'iOS 过滤后 3 张');
 await page.locator('#platformTabs .tab', { hasText: '全部' }).click();
 
 const usCard = page.locator('.card', { hasText: 'US Photo Pro' });
@@ -114,29 +125,29 @@ const cnCard = page.locator('.card', { hasText: '中文笔记' });
 ok(await cnCard.locator('.badge-was').textContent().then(t => t.includes('¥6') && !t.includes('≈')), 'CNY 不重复换算');
 
 await page.locator('#regionTabs .tab', { hasText: '美国' }).click();
-ok(await page.locator('.card').count() === 2, '美国 tab 过滤后 2 张（iOS US Photo + Mac Pro App）');
+ok(await page.locator('#content .card').count() === 2, '美国 tab 过滤后 2 张（iOS US Photo + Mac Pro App）');
 await page.locator('#regionTabs .tab', { hasText: '全部' }).click();
 await page.locator('#regionTabs .tab', { hasText: '台湾' }).click();
-ok(await page.locator('.card').count() === 0, '台湾 tab 过滤后 0 张（fixture 无 TW 数据）');
+ok(await page.locator('#content .card').count() === 0, '台湾 tab 过滤后 0 张（fixture 无 TW 数据）');
 await page.locator('#regionTabs .tab', { hasText: '香港' }).click();
-ok(await page.locator('.card').count() === 0, '香港 tab 过滤后 0 张（fixture 无 HK 数据）');
+ok(await page.locator('#content .card').count() === 0, '香港 tab 过滤后 0 张（fixture 无 HK 数据）');
 await page.locator('#regionTabs .tab', { hasText: '全部' }).click();
 await page.locator('#filters .chip', { hasText: 'Games' }).click();
-ok(await page.locator('.card').count() === 1, 'Games 类目过滤后 1 张');
+ok(await page.locator('#content .card').count() === 1, 'Games 类目过滤后 1 张');
 await page.locator('#filters .chip', { hasText: '全部类目' }).click();
 
 await page.locator('#filters .chip', { hasText: '≈¥100+' }).click();
-ok(await page.locator('.card').count() === 1, '≈¥100+ 为 1 张（Pro Mac App $19.99 ≈ ¥144）');
+ok(await page.locator('#content .card').count() === 1, '≈¥100+ 为 1 张（Pro Mac App $19.99 ≈ ¥144）');
 await page.locator('#filters .chip', { hasText: '≈¥30–100' }).click();
-ok(await page.locator('.card').count() === 2, '≈¥30–100 两张');
+ok(await page.locator('#content .card').count() === 2, '≈¥30–100 两张');
 await page.locator('#filters .chip', { hasText: '全部价位' }).click();
 
 await page.locator('#timeTabs .tab', { hasText: '昨日' }).click();
-ok(await page.locator('.card').count() === 2, '昨日 2 张（SG + Mac Yesterday）');
+ok(await page.locator('#content .card').count() === 2, '昨日 2 张（SG + Mac Yesterday）');
 ok(await page.locator('.badge-date').first().textContent().then(t => t.includes('08-27')), '日期徽章 08-27');
 
 await page.locator('#timeTabs .tab', { hasText: '近 7 日' }).click();
-ok(await page.locator('.card').count() === 6, '近 7 日去重后 6 张');
+ok(await page.locator('#content .card').count() === 6, '近 7 日去重后 6 张');
 ok(await page.locator('.badge-date').count() === 6, '近 7 日每卡有日期徽章');
 
 await page.locator('#timeTabs .tab', { hasText: '今日' }).click();
@@ -144,7 +155,7 @@ await page.locator('.card', { hasText: 'US Photo Pro' }).locator('.fav').click()
 const favs = await page.evaluate(() => localStorage.getItem('afc:favs'));
 ok(favs && favs.includes('1:US'), '收藏写入 localStorage');
 await page.locator('#filters .chip', { hasText: '只看收藏' }).click();
-ok(await page.locator('.card').count() === 1, '只看收藏 1 张');
+ok(await page.locator('#content .card').count() === 1, '只看收藏 1 张');
 await page.locator('.card .fav').click();
 ok(await page.locator('.empty').count() === 1, '收藏清空后空态');
 await page.locator('#filters .chip', { hasText: '只看收藏' }).click();
@@ -162,6 +173,15 @@ await page.reload({ waitUntil: 'networkidle' });
 ok(await page.evaluate(() => localStorage.getItem('afc:favs')).then(s => s.includes('2:CN')), '收藏跨刷新保留');
 ok(await page.evaluate(() => document.documentElement.getAttribute('data-theme')) === 'dark', '主题跨刷新保留');
 
+// 热门付费区：基线日也有内容（放最后，避免打断前面的 flow）
+ok(await page.locator('#popularSection').isVisible(), '热门付费区可见');
+ok(await page.locator('#popularGrid .card').count() === 3, '热门付费 3 张');
+const popularBadges = await page.locator('#popularGrid .badge-popular').count();
+ok(popularBadges === 3, '每张热门卡都有「热门」徽章');
+const popularHasRank = await page.locator('#popularGrid .badge-rank').first().textContent();
+ok(popularHasRank.includes('#1'), '热门卡有排名徽章 #1');
+ok(await page.locator('#popularGrid .card').first().getAttribute('data-url').then(u => u && u.startsWith('https://apps.apple.com')), '热门卡带 App Store 链接');
+
 await browser.close();
 
 // ── 5. 清理（fixture + server）────────────────────────────────────────
@@ -170,7 +190,7 @@ await rm(FIXTURE, { recursive: true, force: true });
 
 // 安全网：跑完后断言 public/data/ 没被污染（保险，万一以后改了 fixture 路径能立刻发现）
 const pubData = await readdir(join(PUBLIC, 'data'));
-const polluted = pubData.find((f) => f.endsWith('.json') && f !== 'today_free.json' && f !== 'week_free.json');
+const polluted = pubData.find((f) => f.endsWith('.json') && f !== 'today_free.json' && f !== 'week_free.json' && f !== 'popular.json');
 const todayRaw = await readFile(join(PUBLIC, 'data', 'today_free.json'), 'utf8');
 const containsTestDev = todayRaw.includes('Test Dev');
 
