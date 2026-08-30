@@ -8,7 +8,25 @@
   },
   "assets": {
     "directory": "./public",
-    "not_found_handling": "404-page"
+    "not_found_handling": "404-page",
+    "headers": [
+      {
+        "path": "/index.html",
+        "headers": [{ "name": "Cache-Control", "value": "no-store" }]
+      },
+      {
+        "path": "/data/*",
+        "headers": [{ "name": "Cache-Control", "value": "public, max-age=300, must-revalidate" }]
+      },
+      {
+        "path": "/*",
+        "headers": [
+          { "name": "X-Frame-Options", "value": "DENY" },
+          { "name": "X-Content-Type-Options", "value": "nosniff" },
+          { "name": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        ]
+      }
+    ]
   },
   "d1_databases": [
     {

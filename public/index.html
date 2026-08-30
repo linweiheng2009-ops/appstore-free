@@ -115,6 +115,33 @@
     backdrop-filter: blur(8px);
   }
   .theme-btn:hover { border-color: var(--accent); box-shadow: 0 0 16px var(--glow); transform: translateY(-1px); }
+  .head-right {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    flex-shrink: 0;
+  }
+  .stats-compact {
+    display: flex; gap: 8px;
+  }
+  .stat-pill {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 8px 12px; min-width: 84px;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow);
+    position: relative; overflow: hidden;
+  }
+  .stat-pill::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: .5;
+  }
+  .stat-pill__num {
+    font-family: var(--mono); font-size: 17px; font-weight: 700; line-height: 1.1;
+    background: var(--hero-grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .stat-pill__num--sm { font-size: 12px; padding-top: 3px; letter-spacing: .5px; }
+  .stat-pill__label {
+    font-size: 10px; color: var(--muted); margin-top: 4px; letter-spacing: 1px;
+  }
 
   /* ── 数据砖 ──────────────────────────────────────────── */
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 26px 0 20px; }
@@ -264,7 +291,7 @@
 <body>
 <header class="wrap">
   <div class="head-row">
-    <div>
+    <div class="head-left">
       <h1>🆓 AppStore限免APP <span class="tag">BETA</span></h1>
       <div class="sub">每日跟踪 iOS + macOS 真限免 · 价格状态变化检测 · 跨 6 国 (US / CN / JP / SG / TW / HK)</div>
       <div class="status-line">
@@ -278,12 +305,14 @@
         <span>iOS + macOS · 6 国</span>
       </div>
     </div>
-    <button class="theme-btn" id="themeBtn" title="切换深/浅色" aria-label="切换深/浅色">☀️</button>
+    <div class="head-right">
+      <div class="stats-compact" id="statsCompact"></div>
+      <button class="theme-btn" id="themeBtn" title="切换深/浅色" aria-label="切换深/浅色">☀️</button>
+    </div>
   </div>
 </header>
 
 <main class="wrap">
-  <div class="stats" id="stats"></div>
   <div class="panel">
     <div class="tabs" id="timeTabs"></div>
     <div class="tabs" id="platformTabs"></div>
@@ -513,7 +542,7 @@ function renderFilters() {
 }
 
 function renderStats() {
-  const el = document.getElementById('stats');
+  const el = document.getElementById('statsCompact');
   let num, numLabel, dateText, dateLabel, thirdText, thirdLabel;
   if (state.time === 'today') {
     num = todayData?.total ?? 0; numLabel = '今日真限免';
@@ -530,14 +559,19 @@ function renderStats() {
     thirdText = String(new Set((weekData?.apps || []).map(dedupKey)).size); thirdLabel = '去重后应用数';
   }
   el.innerHTML = `
-    <div class="tile"><div class="tile__num">${num}</div><div class="tile__label">${numLabel}</div></div>
-    <div class="tile"><div class="tile__num tile__num--sm">${dateText}</div><div class="tile__label">${dateLabel}</div></div>
-    <div class="tile"><div class="tile__num tile__num--sm">${thirdText}</div><div class="tile__label">${thirdLabel}</div></div>
+    <div class="stat-pill"><div class="stat-pill__num">${num}</div><div class="stat-pill__label">${numLabel}</div></div>
+    <div class="stat-pill"><div class="stat-pill__num stat-pill__num--sm">${dateText}</div><div class="stat-pill__label">${dateLabel}</div></div>
+    <div class="stat-pill"><div class="stat-pill__num stat-pill__num--sm">${thirdText}</div><div class="stat-pill__label">${thirdLabel}</div></div>
   `;
 }
 
 function renderContent() {
   const apps = filterApps(baseApps());
+  // 基线日（0 真限免 + 热门区有内容）→ 隐藏空态，让热门付费区做主角
+  if (apps.length === 0 && (popularData?.apps || []).length > 0) {
+    document.getElementById('content').innerHTML = '';
+    return;
+  }
   if (apps.length === 0) {
     document.getElementById('content').innerHTML = emptyState();
     return;
