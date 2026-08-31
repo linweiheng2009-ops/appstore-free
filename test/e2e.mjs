@@ -82,6 +82,17 @@ await writeFile(join(FIXTURE, 'data', 'popular_free.json'), JSON.stringify({
   ],
 }, null, 2));
 
+// 近期限免 APP fixture（v4，iTunes newfreeapplications）：3 个 freshly-gone-free app
+await writeFile(join(FIXTURE, 'data', 'popular_newfree.json'), JSON.stringify({
+  date: '2026-08-28', generated_at: '2026-08-28T00:10:00Z', source: 'test fixture',
+  total: 3,
+  apps: [
+    { app_id: 'N1', region: 'US', currency: 'USD', price: 0, track_name: 'Hero Clash Legends', artist_name: 'Mohsin Afzal',    genre: 'Games',        track_view_url: 'https://apps.apple.com/app/idN1', artwork_url_100: 'https://picsum.photos/seed/N1/100' },
+    { app_id: 'N2', region: 'JP', currency: 'JPY', price: 0, track_name: 'XLSX スプレッドシート', artist_name: '某JP公司',        genre: 'Productivity', track_view_url: 'https://apps.apple.com/app/idN2', artwork_url_100: 'https://picsum.photos/seed/N2/100' },
+    { app_id: 'N3', region: 'CN', currency: 'CNY', price: 0, track_name: '限免新游',           artist_name: '新晋开发者',     genre: 'Entertainment', track_view_url: 'https://apps.apple.com/app/idN3', artwork_url_100: 'https://picsum.photos/seed/N3/100' },
+  ],
+}, null, 2));
+
 // ── 3. 启动 http server（Node.js 内嵌，避开 python http.server 在 macOS 上的 IPv6/空响应 bug）──
 const PORT = 8770;
 const server = createServer(async (req, res) => {
@@ -220,6 +231,12 @@ ok(await page.locator('#popularFreeGrid .card').count() === 4, '热门免费 4 �
 const freeTopName = await page.locator('#popularFreeGrid .card .name').first().textContent();
 ok(freeTopName.includes('ChatGPT Clone'), '热门免费第一名是 ChatGPT Clone');
 
+// 近期限免区（v4，iTunes newfreeapplications）
+ok(await page.locator('#popularNewfreeSection').isVisible(), '近期限免区可见');
+ok(await page.locator('#popularNewfreeGrid .card').count() === 3, '近期限免 3 张');
+const newfreeTopName = await page.locator('#popularNewfreeGrid .card .name').first().textContent();
+ok(newfreeTopName.includes('Hero Clash Legends'), '近期限免第一名是 Hero Clash Legends');
+
 await browser.close();
 
 // ── 5. 清理（fixture + server）────────────────────────────────────────
@@ -228,7 +245,7 @@ await rm(FIXTURE, { recursive: true, force: true });
 
 // 安全网：跑完后断言 public/data/ 没被污染（保险，万一以后改了 fixture 路径能立刻发现）
 const pubData = await readdir(join(PUBLIC, 'data'));
-const polluted = pubData.find((f) => f.endsWith('.json') && f !== 'today_free.json' && f !== 'week_free.json' && f !== 'popular.json' && f !== 'popular_free.json');
+const polluted = pubData.find((f) => f.endsWith('.json') && f !== 'today_free.json' && f !== 'week_free.json' && f !== 'popular.json' && f !== 'popular_free.json' && f !== 'popular_newfree.json');
 const todayRaw = await readFile(join(PUBLIC, 'data', 'today_free.json'), 'utf8');
 const containsTestDev = todayRaw.includes('Test Dev');
 

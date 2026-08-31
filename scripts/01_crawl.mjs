@@ -77,7 +77,9 @@ function toRow(entry, region, platform, date) {
     entry['im:image']?.[2]?.label ||
     '';
   const viewUrl =
-    entry.link?.find((l) => l.attributes?.rel === 'alternate')?.attributes?.href ||
+    (Array.isArray(entry.link)
+      ? entry.link.find((l) => l.attributes?.rel === 'alternate')?.attributes?.href
+      : entry.link?.attributes?.href) ||
     '';
 
   return {
@@ -227,6 +229,54 @@ async function main() {
   const freePath = join(DATA_DIR, `${TODAY}.free.json`);
   await writeFile(freePath, JSON.stringify(freeSnapshot, null, 2));
   console.log(`[crawl] free popular: ${freeSnapshot.total} apps`);
+
+  // ── 近期限免榜（v4）：6 国 newfreeapplications RSS → popular_newfree.json ─────
+  // iTunes 官方「刚变免费」榜单 —— 真正想要的数据：今天/最近从付费变免费的 app
+  const newfreeRowsAll = [];
+  for (const region of REGIONS) {
+    try {
+      const url = `${ITUNES_RSS}/${region.lower}/rss/newfreeapplications/limit=100/json`;
+      console.log(`[crawl] ${region.code}/newfree fetching 100...`);
+      const res = await fetch(url, { headers: { 'User-Agent': 'appstore-free/0.1 (+https://freeapp.laowe.club)' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const entries = json.feed?.entry || [];
+      const rows = entries.map((e) => toRow(e, region, { code: 'ios' }, TODAY));
+      newfreeRowsAll.push(...rows);
+      await new Promise((r) => setTimeout(r, 1200));
+    } catch (err) {
+      console.error(`[crawl] ${region.code}/newfree FAILED:`, err.message);
+    }
+  }
+  // 去重 app_id（保留首次出现 = 最早在 6 国里出现的 = 最新），取 top 30
+  const newfreeSeen = new Set();
+  const newfreeApps = [];
+  for (const r of newfreeRowsAll) {
+    if (!newfreeSeen.has(r.app_id)) {
+      newfreeSeen.add(r.app_id);
+      newfreeApps.push({
+        app_id: r.app_id,
+        track_name: r.track_name,
+        artist_name: r.artist_name,
+        genre: r.genre,
+        region: r.region,
+        currency: r.currency,
+        track_view_url: r.track_view_url,
+        artwork_url_100: r.artwork_url_100,
+      });
+    }
+    if (newfreeApps.length >= 30) break;
+  }
+  const newfreeSnapshot = {
+    date: TODAY,
+    generated_at: new Date().toISOString(),
+    source: 'iTunes RSS newfreeapplications × 6 国',
+    total: newfreeApps.length,
+    apps: newfreeApps,
+  };
+  const newfreePath = join(DATA_DIR, `${TODAY}.newfree.json`);
+  await writeFile(newfreePath, JSON.stringify(newfreeSnapshot, null, 2));
+  console.log(`[crawl] new free popular: ${newfreeSnapshot.total} apps`);
 
   // 写今日 raw snapshot（commit 用）
   const snapshotPath = join(DATA_DIR, `${TODAY}.json`);

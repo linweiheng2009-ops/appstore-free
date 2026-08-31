@@ -179,6 +179,13 @@ async function main() {
     await writeFile(join(PUBLIC_DATA_DIR, 'popular_free.json'), freeContent);
     console.log(`[detect] popular_free.json: copied from ${todayFreeSnapshot}`);
   }
+  // 近期限免榜（v4，来自 iTunes newfreeapplications RSS）
+  const todayNewfreeSnapshot = join(DATA_DIR, `${TODAY}.newfree.json`);
+  if (existsSync(todayNewfreeSnapshot)) {
+    const content = await readFile(todayNewfreeSnapshot, 'utf8');
+    await writeFile(join(PUBLIC_DATA_DIR, 'popular_newfree.json'), content);
+    console.log(`[detect] popular_newfree.json: copied from ${todayNewfreeSnapshot}`);
+  }
 
   console.log(`[detect] today_free.json: ${freeApps.length} 真限免 (${Object.keys(byRegion).join('/') || 'none'})`);
   console.log(`[detect] week_free.json: ${weekApps.length} 次限免 (${weekStart} ~ ${TODAY})`);

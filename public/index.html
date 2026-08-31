@@ -383,6 +383,14 @@
     </div>
     <div class="grid" id="popularFreeGrid"></div>
   </section>
+
+  <section class="popular-section popular-section--newfree" id="popularNewfreeSection" hidden>
+    <div class="popular-head">
+      <h2>🎁 近期限免 APP</h2>
+      <p class="popular-sub">刚变免费的 app · 跨 6 国 · 来自 iTunes RSS newfreeapplications</p>
+    </div>
+    <div class="grid" id="popularNewfreeGrid"></div>
+  </section>
 </main>
 
 <footer>
@@ -433,6 +441,7 @@ let todayData = null;  // ./data/today_free.json
 let weekData = null;   // ./data/week_free.json
 let popularData = null; // ./data/popular.json
 let popularFreeData = null; // ./data/popular_free.json
+let popularNewfreeData = null; // ./data/popular_newfree.json
 let favs = loadFavs();
 
 function loadFavs() {
@@ -452,11 +461,13 @@ async function load() {
     fetch('./data/week_free.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
     fetch('./data/popular.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
     fetch('./data/popular_free.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
+    fetch('./data/popular_newfree.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
   ]);
   todayData = results[0].status === 'fulfilled' ? results[0].value : null;
   weekData = results[1].status === 'fulfilled' ? results[1].value : null;
   popularData = results[2].status === 'fulfilled' ? results[2].value : null;
   popularFreeData = results[3].status === 'fulfilled' ? results[3].value : null;
+  popularNewfreeData = results[4].status === 'fulfilled' ? results[4].value : null;
 
   if (!todayData && !weekData) {
     document.getElementById('content').innerHTML =
@@ -511,6 +522,7 @@ function render() {
   renderContent();
   renderPopularSection();
   renderPopularFreeSection();
+  renderPopularNewfreeSection();
 }
 
 function renderTimeTabs() {
@@ -702,6 +714,41 @@ function popularFreeCard(a, idx) {
           <div class="badge-row">
             <span class="badge badge-rank">#${idx + 1}</span>
             <span class="badge badge-popular">免费榜</span>
+            <span class="badge badge-genre">${a.region}</span>
+            ${a.genre ? `<span class="badge badge-genre">${escapeHtml(a.genre)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPopularNewfreeSection() {
+  const section = document.getElementById('popularNewfreeSection');
+  const grid = document.getElementById('popularNewfreeGrid');
+  const apps = popularNewfreeData?.apps || [];
+  if (apps.length === 0) { section.hidden = true; return; }
+  section.hidden = false;
+  grid.innerHTML = apps.map((a, i) => popularNewfreeCard(a, i)).join('');
+  grid.querySelectorAll('.card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const url = card.dataset.url;
+      if (url && url !== '#') window.open(url, '_blank');
+    });
+  });
+}
+
+function popularNewfreeCard(a, idx) {
+  return `
+    <div class="card" style="--i:${Math.min(idx, 16)}" data-url="${escapeHtml(a.track_view_url || '#')}">
+      <div class="card-head">
+        <img class="icon" src="${escapeHtml(a.artwork_url_100 || '')}" alt="" loading="lazy" />
+        <div class="meta">
+          <div class="name">${escapeHtml(a.track_name || '(unknown)')}</div>
+          <div class="artist">${escapeHtml(a.artist_name || '')}</div>
+          <div class="badge-row">
+            <span class="badge badge-rank">#${idx + 1}</span>
+            <span class="badge badge-free">新限免</span>
             <span class="badge badge-genre">${a.region}</span>
             ${a.genre ? `<span class="badge badge-genre">${escapeHtml(a.genre)}</span>` : ''}
           </div>
