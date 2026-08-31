@@ -11,8 +11,8 @@
  */
 
 import { chromium } from '/Users/linweiheng/.npm-global/lib/node_modules/playwright/index.mjs';
-import { spawn } from 'node:child_process';
-import { cp, mkdtemp, writeFile, rm, readdir, readFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
+import { cp, mkdtemp, writeFile, rm, readdir, readFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -70,12 +70,27 @@ await writeFile(join(FIXTURE, 'data', 'popular.json'), JSON.stringify({
   ],
 }, null, 2));
 
-// ── 3. 启动 http server（固定端口 8770，避免正则解析端口的不确定性）──────
+// ── 3. 启动 http server（Node.js 内嵌，避开 python http.server 在 macOS 上的 IPv6/空响应 bug）──
 const PORT = 8770;
-const server = spawn('python3', ['-m', 'http.server', String(PORT), '--directory', FIXTURE],
-  { stdio: ['ignore', 'pipe', 'pipe'] });
-const BASE = `http://localhost:${PORT}`;
-// 探测 server 是否真起来了（最多 5s），避免命令行输出格式变化导致误判
+const server = createServer(async (req, res) => {
+  try {
+    const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
+    let filePath = join(FIXTURE, decodeURIComponent(url.pathname));
+    if (!filePath.startsWith(FIXTURE)) { res.writeHead(403); res.end(); return; }
+    let st;
+    try { st = await stat(filePath); } catch { res.writeHead(404); res.end('not found'); return; }
+    if (st.isDirectory()) filePath = join(filePath, 'index.html');
+    const content = await readFile(filePath);
+    const ext = filePath.split('.').pop();
+    const mime = { html: 'text/html', json: 'application/json', js: 'application/javascript', css: 'text/css', xml: 'application/xml', png: 'image/png', svg: 'image/svg+xml', txt: 'text/plain' }[ext] || 'application/octet-stream';
+    res.writeHead(200, { 'Content-Type': mime + '; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(content);
+  } catch {
+    res.writeHead(404); res.end('not found');
+  }
+});
+server.listen(PORT, '127.0.0.1');
+const BASE = `http://127.0.0.1:${PORT}`;
 for (let i = 0; i < 50; i++) {
   try {
     const r = await fetch(BASE + '/');
@@ -96,7 +111,10 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 page.on('pageerror', (e) => console.log('  [pageerror]', e.message));
 
-await page.goto(BASE, { waitUntil: 'networkidle' });
+await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+// 等首屏渲染：time tabs / stats / content / popular 至少有一个出现
+await page.locator('#timeTabs .tab, #popularGrid .card, #content .card, .empty').first().waitFor({ timeout: 10000 });
+await page.waitForTimeout(300); // 让入场动画完成
 
 const timeTabs = await page.locator('#timeTabs .tab').allTextContents();
 ok(timeTabs[0].includes('今日') && timeTabs[0].includes('4'), '今日 tab 计数=4');
@@ -169,7 +187,9 @@ const cd = await page.locator('#countdown').textContent();
 ok(/^\d{2}:\d{2}:\d{2}$/.test(cd), '倒计时格式 → ' + cd);
 
 await page.locator('.card', { hasText: '中文笔记' }).locator('.fav').click();
-await page.reload({ waitUntil: 'networkidle' });
+await page.reload({ waitUntil: 'domcontentloaded' });
+await page.locator('#timeTabs .tab, #popularGrid .card').first().waitFor({ timeout: 10000 });
+await page.waitForTimeout(300);
 ok(await page.evaluate(() => localStorage.getItem('afc:favs')).then(s => s.includes('2:CN')), '收藏跨刷新保留');
 ok(await page.evaluate(() => document.documentElement.getAttribute('data-theme')) === 'dark', '主题跨刷新保留');
 
@@ -185,7 +205,7 @@ ok(await page.locator('#popularGrid .card').first().getAttribute('data-url').the
 await browser.close();
 
 // ── 5. 清理（fixture + server）────────────────────────────────────────
-server.kill('SIGTERM');
+server.close();
 await rm(FIXTURE, { recursive: true, force: true });
 
 // 安全网：跑完后断言 public/data/ 没被污染（保险，万一以后改了 fixture 路径能立刻发现）
