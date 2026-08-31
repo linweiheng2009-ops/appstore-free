@@ -523,6 +523,32 @@ function render() {
   renderPopularSection();
   renderPopularFreeSection();
   renderPopularNewfreeSection();
+  reorderSections();
+}
+
+// 没有真限免数据时，把「近期限免」挪到面板下、#content 上（最显眼位置）
+function reorderSections() {
+  const main = document.querySelector('main');
+  const newfree = document.getElementById('popularNewfreeSection');
+  const content = document.getElementById('content');
+  const popular = document.getElementById('popularSection');
+  const popularFree = document.getElementById('popularFreeSection');
+  if (!main || !newfree || !content) return;
+  // 真限免是否为空？看 #content 里的卡片数
+  const hasZhenjianmei = content.querySelectorAll('#content .card').length > 0;
+  const hasNewfree = newfree.hidden === false;
+  if (!hasZhenjianmei && hasNewfree) {
+    // 把 near-limit 插到 content 前面（面板下方、#content 上方）
+    main.insertBefore(newfree, content);
+    // 再把 popular 和 popularFree 依次排在 near-limit 后面
+    if (popular) main.insertBefore(popular, popularFree || content);
+    if (popularFree) main.insertBefore(popularFree, content);
+  } else {
+    // 恢复原始顺序：content → popular → popularFree → newfree
+    main.insertBefore(content, popular);
+    main.insertBefore(popular, popularFree);
+    main.insertBefore(popularFree, newfree);
+  }
 }
 
 function renderTimeTabs() {

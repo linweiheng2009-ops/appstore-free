@@ -225,6 +225,26 @@ const popularHasRank = await page.locator('#popularGrid .badge-rank').first().te
 ok(popularHasRank.includes('#1'), '热门卡有排名徽章 #1');
 ok(await page.locator('#popularGrid .card').first().getAttribute('data-url').then(u => u && u.startsWith('https://apps.apple.com')), '热门卡带 App Store 链接');
 
+// 基线日（真限免 0）下：近期限免 section 应排到最前
+// 覆盖 fixture：today_free + week_free 都清空，再 reload 触发 reorder
+await writeFile(join(FIXTURE, 'data', 'today_free.json'), JSON.stringify({
+  date: '2026-08-28', detected_at: '2026-08-28T00:10:00Z', method: 'baseline test', total: 0,
+  by_region: {}, by_platform: {}, apps: [],
+}));
+await writeFile(join(FIXTURE, 'data', 'week_free.json'), JSON.stringify({
+  generated_at: '2026-08-28T00:10:00Z', window: { start: '2026-08-22', end: '2026-08-28' },
+  total: 0, by_region: {}, by_platform: {}, apps: [],
+}));
+await page.reload({ waitUntil: 'domcontentloaded' });
+await page.locator('#popularNewfreeGrid .card').first().waitFor({ timeout: 10000 });
+await page.waitForTimeout(300);
+const mainOrder = await page.evaluate(() => {
+  const els = document.querySelectorAll('main > *');
+  return Array.from(els).map(e => e.id);
+});
+ok(mainOrder.indexOf('popularNewfreeSection') < mainOrder.indexOf('content'), '无真限免时近期限免 section 在 #content 之前');
+ok(mainOrder.indexOf('content') < mainOrder.indexOf('popularSection'), '#content 在热门付费之前');
+
 // 热门免费区
 ok(await page.locator('#popularFreeSection').isVisible(), '热门免费区可见');
 ok(await page.locator('#popularFreeGrid .card').count() === 4, '热门免费 4 张');
