@@ -375,6 +375,14 @@
     </div>
     <div class="grid" id="popularGrid"></div>
   </section>
+
+  <section class="popular-section popular-section--free" id="popularFreeSection" hidden>
+    <div class="popular-head">
+      <h2>🆓 今日热门免费 APP</h2>
+      <p class="popular-sub">当前总榜热门 · 跨 6 国 · 来自 iTunes RSS topfreeapplications</p>
+    </div>
+    <div class="grid" id="popularFreeGrid"></div>
+  </section>
 </main>
 
 <footer>
@@ -424,6 +432,7 @@ const state = {
 let todayData = null;  // ./data/today_free.json
 let weekData = null;   // ./data/week_free.json
 let popularData = null; // ./data/popular.json
+let popularFreeData = null; // ./data/popular_free.json
 let favs = loadFavs();
 
 function loadFavs() {
@@ -442,10 +451,12 @@ async function load() {
     fetch('./data/today_free.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
     fetch('./data/week_free.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
     fetch('./data/popular.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
+    fetch('./data/popular_free.json').then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))),
   ]);
   todayData = results[0].status === 'fulfilled' ? results[0].value : null;
   weekData = results[1].status === 'fulfilled' ? results[1].value : null;
   popularData = results[2].status === 'fulfilled' ? results[2].value : null;
+  popularFreeData = results[3].status === 'fulfilled' ? results[3].value : null;
 
   if (!todayData && !weekData) {
     document.getElementById('content').innerHTML =
@@ -499,6 +510,7 @@ function render() {
   renderStats();
   renderContent();
   renderPopularSection();
+  renderPopularFreeSection();
 }
 
 function renderTimeTabs() {
@@ -662,6 +674,41 @@ function renderPopularSection() {
       if (url && url !== '#') window.open(url, '_blank');
     });
   });
+}
+
+function renderPopularFreeSection() {
+  const section = document.getElementById('popularFreeSection');
+  const grid = document.getElementById('popularFreeGrid');
+  const apps = popularFreeData?.apps || [];
+  if (apps.length === 0) { section.hidden = true; return; }
+  section.hidden = false;
+  grid.innerHTML = apps.map((a, i) => popularFreeCard(a, i)).join('');
+  grid.querySelectorAll('.card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const url = card.dataset.url;
+      if (url && url !== '#') window.open(url, '_blank');
+    });
+  });
+}
+
+function popularFreeCard(a, idx) {
+  return `
+    <div class="card" style="--i:${Math.min(idx, 16)}" data-url="${escapeHtml(a.track_view_url || '#')}">
+      <div class="card-head">
+        <img class="icon" src="${escapeHtml(a.artwork_url_100 || '')}" alt="" loading="lazy" />
+        <div class="meta">
+          <div class="name">${escapeHtml(a.track_name || '(unknown)')}</div>
+          <div class="artist">${escapeHtml(a.artist_name || '')}</div>
+          <div class="badge-row">
+            <span class="badge badge-rank">#${idx + 1}</span>
+            <span class="badge badge-popular">免费榜</span>
+            <span class="badge badge-genre">${a.region}</span>
+            ${a.genre ? `<span class="badge badge-genre">${escapeHtml(a.genre)}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function popularCard(a, idx) {

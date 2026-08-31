@@ -12,7 +12,7 @@
  *   data/free-YYYY-MM-DD.json（当日检测存档，未来本地 fallback 拼 7 日用）
  */
 
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -171,6 +171,15 @@ async function main() {
   for (const [path, payload] of writes) {
     await writeFile(path, JSON.stringify(payload, null, 2));
   }
+
+  // 热门免费榜（独立于检测逻辑，直接复制今日 crawl snapshot）
+  const todayFreeSnapshot = join(DATA_DIR, `${TODAY}.free.json`);
+  if (existsSync(todayFreeSnapshot)) {
+    const freeContent = await readFile(todayFreeSnapshot, 'utf8');
+    await writeFile(join(PUBLIC_DATA_DIR, 'popular_free.json'), freeContent);
+    console.log(`[detect] popular_free.json: copied from ${todayFreeSnapshot}`);
+  }
+
   console.log(`[detect] today_free.json: ${freeApps.length} 真限免 (${Object.keys(byRegion).join('/') || 'none'})`);
   console.log(`[detect] week_free.json: ${weekApps.length} 次限免 (${weekStart} ~ ${TODAY})`);
   console.log(`[detect] popular.json: ${popularApps.length} 热门付费 APP`);

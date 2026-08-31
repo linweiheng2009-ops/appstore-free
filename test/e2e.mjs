@@ -70,6 +70,18 @@ await writeFile(join(FIXTURE, 'data', 'popular.json'), JSON.stringify({
   ],
 }, null, 2));
 
+// 热门免费 APP fixture：4 个 topfree 风格 app（ChatGPT-like）
+await writeFile(join(FIXTURE, 'data', 'popular_free.json'), JSON.stringify({
+  date: '2026-08-28', generated_at: '2026-08-28T00:10:00Z', source: 'test fixture',
+  total: 4,
+  apps: [
+    { app_id: 'F1', region: 'US', currency: 'USD', price: 0, track_name: 'ChatGPT Clone',     artist_name: 'OpenAI LLC',   genre: 'Productivity', track_view_url: 'https://apps.apple.com/app/idF1', artwork_url_100: 'https://picsum.photos/seed/F1/100' },
+    { app_id: 'F2', region: 'CN', currency: 'CNY', price: 0, track_name: '免费短视频',         artist_name: '本地开发者',    genre: 'Entertainment', track_view_url: 'https://apps.apple.com/app/idF2', artwork_url_100: 'https://picsum.photos/seed/F2/100' },
+    { app_id: 'F3', region: 'JP', currency: 'JPY', price: 0, track_name: 'JP Free Game',      artist_name: 'JP Studio',     genre: 'Games',        track_view_url: 'https://apps.apple.com/app/idF3', artwork_url_100: 'https://picsum.photos/seed/F3/100' },
+    { app_id: 'F4', region: 'US', currency: 'USD', price: 0, track_name: 'Free Sports',       artist_name: 'Sports Inc',   genre: 'Sports',       track_view_url: 'https://apps.apple.com/app/idF4', artwork_url_100: 'https://picsum.photos/seed/F4/100' },
+  ],
+}, null, 2));
+
 // ── 3. 启动 http server（Node.js 内嵌，避开 python http.server 在 macOS 上的 IPv6/空响应 bug）──
 const PORT = 8770;
 const server = createServer(async (req, res) => {
@@ -202,6 +214,12 @@ const popularHasRank = await page.locator('#popularGrid .badge-rank').first().te
 ok(popularHasRank.includes('#1'), '热门卡有排名徽章 #1');
 ok(await page.locator('#popularGrid .card').first().getAttribute('data-url').then(u => u && u.startsWith('https://apps.apple.com')), '热门卡带 App Store 链接');
 
+// 热门免费区
+ok(await page.locator('#popularFreeSection').isVisible(), '热门免费区可见');
+ok(await page.locator('#popularFreeGrid .card').count() === 4, '热门免费 4 张');
+const freeTopName = await page.locator('#popularFreeGrid .card .name').first().textContent();
+ok(freeTopName.includes('ChatGPT Clone'), '热门免费第一名是 ChatGPT Clone');
+
 await browser.close();
 
 // ── 5. 清理（fixture + server）────────────────────────────────────────
@@ -210,7 +228,7 @@ await rm(FIXTURE, { recursive: true, force: true });
 
 // 安全网：跑完后断言 public/data/ 没被污染（保险，万一以后改了 fixture 路径能立刻发现）
 const pubData = await readdir(join(PUBLIC, 'data'));
-const polluted = pubData.find((f) => f.endsWith('.json') && f !== 'today_free.json' && f !== 'week_free.json' && f !== 'popular.json');
+const polluted = pubData.find((f) => f.endsWith('.json') && f !== 'today_free.json' && f !== 'week_free.json' && f !== 'popular.json' && f !== 'popular_free.json');
 const todayRaw = await readFile(join(PUBLIC, 'data', 'today_free.json'), 'utf8');
 const containsTestDev = todayRaw.includes('Test Dev');
 

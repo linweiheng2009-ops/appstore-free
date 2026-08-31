@@ -180,6 +180,54 @@ async function main() {
     console.log('[crawl] scripts/mac-seed.json 不存在，跳过 Mac seed lookup');
   }
 
+  // ── 热门免费榜（v3）：6 国 topfreeapplications RSS → popular_free.json ────
+  // 不入 D1（price=0 会污染 paid→free 检测），单独存档
+  const freeRowsAll = [];
+  for (const region of REGIONS) {
+    try {
+      const url = `${ITUNES_RSS}/${region.lower}/rss/topfreeapplications/limit=100/json`;
+      console.log(`[crawl] ${region.code}/topfree fetching 100...`);
+      const res = await fetch(url, { headers: { 'User-Agent': 'appstore-free/0.1 (+https://freeapp.laowe.club)' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const entries = json.feed?.entry || [];
+      const rows = entries.map((e) => toRow(e, region, { code: 'ios' }, TODAY));
+      freeRowsAll.push(...rows);
+      await new Promise((r) => setTimeout(r, 1200));
+    } catch (err) {
+      console.error(`[crawl] ${region.code}/topfree FAILED:`, err.message);
+    }
+  }
+  // 去重 app_id（保留首次出现 = 6 国热度最高的区域），取 top 30
+  const freeSeen = new Set();
+  const freeApps = [];
+  for (const r of freeRowsAll) {
+    if (!freeSeen.has(r.app_id)) {
+      freeSeen.add(r.app_id);
+      freeApps.push({
+        app_id: r.app_id,
+        track_name: r.track_name,
+        artist_name: r.artist_name,
+        genre: r.genre,
+        region: r.region,
+        currency: r.currency,
+        track_view_url: r.track_view_url,
+        artwork_url_100: r.artwork_url_100,
+      });
+    }
+    if (freeApps.length >= 30) break;
+  }
+  const freeSnapshot = {
+    date: TODAY,
+    generated_at: new Date().toISOString(),
+    source: 'iTunes RSS topfreeapplications × 6 国',
+    total: freeApps.length,
+    apps: freeApps,
+  };
+  const freePath = join(DATA_DIR, `${TODAY}.free.json`);
+  await writeFile(freePath, JSON.stringify(freeSnapshot, null, 2));
+  console.log(`[crawl] free popular: ${freeSnapshot.total} apps`);
+
   // 写今日 raw snapshot（commit 用）
   const snapshotPath = join(DATA_DIR, `${TODAY}.json`);
   const snapshot = {
