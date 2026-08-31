@@ -76,8 +76,65 @@
   .wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
   /* ── 头部 ────────────────────────────────────────────── */
-  header { padding: 52px 0 30px; }
-  .head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  header {
+    padding: 0;
+    margin-top: 24px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    backdrop-filter: blur(14px);
+    box-shadow: var(--shadow);
+    position: relative; overflow: hidden;
+  }
+  /* 顶部细线 accent，让 header 不那么「平」 */
+  header::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 5%, var(--accent) 50%, transparent 95%);
+    opacity: .55;
+  }
+  .head-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    padding: 22px 24px;
+    align-items: center;
+  }
+  .head-left { min-width: 0; }
+  .head-right {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    flex-shrink: 0;
+  }
+  .stats-compact {
+    display: flex; gap: 8px;
+  }
+  .stat-pill {
+    background: rgba(255, 255, 255, .03);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 7px 14px;
+    min-width: 100px;
+    text-align: center;
+    position: relative; overflow: hidden;
+    transition: border-color .2s, transform .15s;
+  }
+  .stat-pill:hover { border-color: var(--accent); transform: translateY(-1px); }
+  :root[data-theme="light"] .stat-pill { background: rgba(255, 255, 255, .85); }
+  .stat-pill::before {
+    content: ''; position: absolute; top: 0; left: 8px; right: 8px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: .6;
+  }
+  .stat-pill__num {
+    font-family: var(--mono); font-size: 18px; font-weight: 700; line-height: 1.1;
+    background: var(--hero-grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .stat-pill__num--sm { font-size: 13px; padding-top: 3px; letter-spacing: .5px; }
+  .stat-pill__label {
+    font-size: 10px; color: var(--muted); margin-top: 5px; letter-spacing: 1.5px;
+  }
+  .theme-btn {
+    width: 36px; height: 36px; border-radius: 10px; font-size: 15px;
+  }
   h1 {
     font-size: clamp(28px, 5vw, 42px);
     font-weight: 800;
@@ -107,41 +164,6 @@
   @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
   .sep { opacity: .4; }
   #countdown { color: var(--accent); }
-  .theme-btn {
-    flex-shrink: 0;
-    border: 1px solid var(--line-strong); background: var(--panel); color: var(--ink);
-    width: 40px; height: 40px; border-radius: 12px; cursor: pointer; font-size: 17px; line-height: 1;
-    transition: border-color .2s, box-shadow .2s, transform .15s;
-    backdrop-filter: blur(8px);
-  }
-  .theme-btn:hover { border-color: var(--accent); box-shadow: 0 0 16px var(--glow); transform: translateY(-1px); }
-  .head-right {
-    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
-    flex-shrink: 0;
-  }
-  .stats-compact {
-    display: flex; gap: 8px;
-  }
-  .stat-pill {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    padding: 8px 12px; min-width: 84px;
-    backdrop-filter: blur(10px);
-    box-shadow: var(--shadow);
-    position: relative; overflow: hidden;
-  }
-  .stat-pill::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    opacity: .5;
-  }
-  .stat-pill__num {
-    font-family: var(--mono); font-size: 17px; font-weight: 700; line-height: 1.1;
-    background: var(--hero-grad); -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .stat-pill__num--sm { font-size: 12px; padding-top: 3px; letter-spacing: .5px; }
-  .stat-pill__label {
-    font-size: 10px; color: var(--muted); margin-top: 4px; letter-spacing: 1px;
-  }
 
   /* ── 数据砖 ──────────────────────────────────────────── */
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 26px 0 20px; }
@@ -543,36 +565,32 @@ function renderFilters() {
 
 function renderStats() {
   const el = document.getElementById('statsCompact');
-  let num, numLabel, dateText, dateLabel, thirdText, thirdLabel;
+  let num, numLabel, dateText, dateLabel;
   if (state.time === 'today') {
     num = todayData?.total ?? 0; numLabel = '今日真限免';
     dateText = todayData?.date || '—'; dateLabel = '数据日期';
-    thirdText = (todayData?.detected_at || '').slice(11, 16) + ' UTC'; thirdLabel = '检测时间';
   } else if (state.time === 'yesterday') {
     const y = dateMinus(todayData?.date || '', 1);
     num = filterApps(baseApps()).length; numLabel = '昨日真限免';
     dateText = y || '—'; dateLabel = '数据日期';
-    thirdText = '7-DAY WINDOW'; thirdLabel = '来源窗口';
   } else {
     num = weekData?.total ?? 0; numLabel = '近 7 日限免次数';
     dateText = `${weekData?.window?.start || ''} ~ ${weekData?.window?.end || ''}`; dateLabel = '回看窗口';
-    thirdText = String(new Set((weekData?.apps || []).map(dedupKey)).size); thirdLabel = '去重后应用数';
   }
   el.innerHTML = `
     <div class="stat-pill"><div class="stat-pill__num">${num}</div><div class="stat-pill__label">${numLabel}</div></div>
     <div class="stat-pill"><div class="stat-pill__num stat-pill__num--sm">${dateText}</div><div class="stat-pill__label">${dateLabel}</div></div>
-    <div class="stat-pill"><div class="stat-pill__num stat-pill__num--sm">${thirdText}</div><div class="stat-pill__label">${thirdLabel}</div></div>
   `;
 }
 
 function renderContent() {
   const apps = filterApps(baseApps());
-  // 基线日（0 真限免 + 热门区有内容）→ 隐藏空态，让热门付费区做主角
-  if (apps.length === 0 && (popularData?.apps || []).length > 0) {
-    document.getElementById('content').innerHTML = '';
-    return;
-  }
   if (apps.length === 0) {
+    // 基线日 + 用户没主动筛选 → 让热门付费区做主角，不显示空态
+    if (!state.favOnly && (popularData?.apps || []).length > 0) {
+      document.getElementById('content').innerHTML = '';
+      return;
+    }
     document.getElementById('content').innerHTML = emptyState();
     return;
   }

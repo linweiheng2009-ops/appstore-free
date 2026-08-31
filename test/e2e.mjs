@@ -103,7 +103,7 @@ ok(timeTabs[0].includes('今日') && timeTabs[0].includes('4'), '今日 tab 计�
 ok(timeTabs.some(t => t.includes('昨日') && t.includes('2')), '昨日 tab 计数=2');
 ok(timeTabs.some(t => t.includes('近 7 日') && t.includes('6')), '近7日 tab 去重后计数=6');
 ok(await page.locator('#content .card').count() === 4, '今日 4 张卡片（含 mac）');
-ok(await page.locator('.tile').count() === 3, '3 个数据砖');
+ok(await page.locator('.stat-pill').count() === 2, '2 个数据砖（去检测时间）');
 
 // ── 平台 tabs ──
 const platformTabs = await page.locator('#platformTabs .tab').allTextContents();
