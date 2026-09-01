@@ -24,13 +24,12 @@ const ROOT = process.cwd();
 const DATA_DIR = join(ROOT, 'data');
 const TODAY = new Date().toISOString().slice(0, 10); // YYYY-MM-DD UTC
 
-// 4 国配置（DEC-002；TW / HK 2026-08-30 加进来 → 6 国）
+// 4 国配置（DEC-002；HK 2026-08-30 加进来；TW 2026-09-01 移除 → 5 国）
 const REGIONS = [
   { code: 'US', lower: 'us', name: '美国', currency: 'USD' },
   { code: 'CN', lower: 'cn', name: '中国', currency: 'CNY' },
   { code: 'JP', lower: 'jp', name: '日本', currency: 'JPY' },
   { code: 'SG', lower: 'sg', name: '新加坡', currency: 'SGD' },
-  { code: 'TW', lower: 'tw', name: '台湾', currency: 'TWD' },
   { code: 'HK', lower: 'hk', name: '香港', currency: 'HKD' },
 ];
 
