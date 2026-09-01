@@ -1,6 +1,6 @@
 {
-  "date": "2026-08-31",
-  "detected_at": "2026-08-31T11:22:35.526Z",
+  "date": "2026-09-01",
+  "detected_at": "2026-09-01T05:10:27.111Z",
   "method": "price_today=0 AND price_yesterday>0",
   "total": 0,
   "by_region": {},
