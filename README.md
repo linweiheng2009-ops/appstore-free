@@ -4,8 +4,10 @@
 
 ## 这是什么
 
-每天跟踪 iOS App Store **真限免**（从付费变免费 → 又恢复付费），跨 4 国展示。
+每天跟踪 iOS App Store **真限免**（从付费变免费 → 又恢复付费），跨 5 国展示。
 区别于「AppShopper」类纯 RSS 聚合：靠**价格状态变化检测**而不是「价格=0」过滤。
+
+基线日（0 真限免）也会显示从 Apple RSS 拉来的「近期限免」（newfreeapplications）+「今日热门免费榜」（topfreeapplications）+「今日热门付费榜」（toppaidapplications）——页面永远有内容。
 
 ## 上线域
 
@@ -14,14 +16,13 @@
 
 ## 数据源
 
-- 主：**iTunes RSS JSON API**（`/rss/toppaidapplications/limit=N/json`，官方免费无需 key；单国上限 100 条）
-- 辅：RSSHub `apple/appshopper`（验证用，待接入）
-- 4 国：US / CN / JP / SG
-  - 2026-08-30 加 TW / HK → **6 国**
-  - 2026-09-01 移除 TW → **5 国**（US / CN / JP / SG / HK）
-- 2 平台：iOS + macOS
-  - iOS：RSS top-paid 榜单（4 国 ×100）
-  - **macOS**：top-paid Mac 榜单已下线，备用方案 —— `scripts/mac-seed.json` 维护 ~38 个热门 Mac app 的 bundle ID，每天 4 国各查一次 iTunes Lookup（4 次 API 调用）
+- 主：**iTunes RSS JSON API**（官方免费无需 key）
+ - `toppaidapplications/limit=100/json` → iOS 真限免检测
+ - `newfreeapplications/limit=100/json` → 刚变免费的 app 列表
+ - `topfreeapplications/limit=100/json` → 当前总榜热门免费
+- **macOS**：top-paid Mac 榜单已下线 → 备用方案 `scripts/mac-seed.json`（38 个热门 Mac app bundle ID，每天 5 国各查一次 iTunes Lookup API，5 次调用）
+- 5 国：US / CN / JP / SG / HK
+- 2 平台：iOS + macOS（schema 加了 `platform` 字段，PK = app_id + region + platform + date）
 
 ## 技术栈
 
